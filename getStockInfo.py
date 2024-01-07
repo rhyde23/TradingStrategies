@@ -2,9 +2,5 @@
 
 import yfinance as yf
 
-msft = yf.Ticker("MSFT")
-
-# get historical market data
-hist = msft.history(period="1mo")
-print(hist)
-print(type(hist))
+def get_historical_data(ticker, p) :
+    return yf.Ticker(ticker).history(period=p)
