@@ -23,14 +23,14 @@ def calculate_rsi(ticker:str, period_in_days:int, historical_context:int) :
     for x in range(period_in_days+1, historical_context) :
         difference = hist_data.iloc[x]["Close"]-hist_data.iloc[x-1]["Close"]
         if difference >= 0 :
-            avg_gain = ((avg_gain*13)+difference)/14
-            avg_loss = (avg_loss*13)/14
+            avg_gain = ((avg_gain*(period_in_days-1))+difference)/period_in_days
+            avg_loss = (avg_loss*(period_in_days-1))/period_in_days
         else :
-            avg_gain = (avg_gain*13)/14
-            avg_loss = ((avg_loss*13)-difference)/14
+            avg_gain = (avg_gain*(period_in_days-1))/period_in_days
+            avg_loss = ((avg_loss*(period_in_days-1))-difference)/period_in_days
     #Finally, we calculate the relative strength value and then return the RSI in terms of a value 0-100
     rs = (avg_gain/avg_loss)
     return 100-(100/(1+rs))
 
-print(calculate_rsi("NVDA", 14, 1000))
+print(calculate_rsi("CRM", 5, 1000))
 
