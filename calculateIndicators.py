@@ -1,14 +1,17 @@
 #This script calculates the Relative Strength Index (RSI) based on a given stock ticker and time period in days
 
-#Import script that accesses Python library yfinance
-import getStockInfo
+import yfinance as yf
+
+#This function retrieves historical data of a stock
+def get_historical_data(ticker, p) :
+    return yf.Ticker(ticker).history(period=p)
 
 #Function to calculate RSI
 #Arguments are: desired stock ticker, the RSI period, and the number of historical days to achieve "smoothing effect"
 def calculate_rsi(ticker:str, period_in_days:int, historical_context:int) :
     #Access stock's historical data from yahoo finance
-    hist_data = getStockInfo.get_historical_data(ticker, str(historical_context)+"D")
-
+    hist_data = get_historical_data(ticker, str(historical_context)+"D")
+    
     #This first loop calculates initial RSI value in the past before smoothing
     gain_sum, loss_sum = 0, 0
     for i in range(1, period_in_days+1) :
@@ -32,5 +35,5 @@ def calculate_rsi(ticker:str, period_in_days:int, historical_context:int) :
     rs = (avg_gain/avg_loss)
     return 100-(100/(1+rs))
 
-print(calculate_rsi("CRM", 5, 1000))
+print(calculate_rsi("MSFT", 14, 1000))
 

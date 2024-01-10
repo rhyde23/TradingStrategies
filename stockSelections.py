@@ -6,12 +6,12 @@
 import requests 
 from bs4 import BeautifulSoup 
 
-#Processes url request
-URL = "https://www.tradingview.com/markets/stocks-usa/market-movers-active/" 
-r = requests.get(URL)
-
 #Function to extract the list of 100 most traded stocks from tradingview.com and filters out stocks that don't meet minimum relative volume 
-def get_stocks_in_criteria(minimum_relative_volume:int) :
+def selection1(minimum_relative_volume:int) :
+    #Processes url request
+    URL = "https://www.tradingview.com/markets/stocks-usa/market-movers-active/" 
+    r = requests.get(URL)
+    
     soup = BeautifulSoup(r.content, 'html.parser')
     accepted = []
     for stock in soup.find_all("tr", {"class":"row-RdUXZpkv listRow"}) :
@@ -29,3 +29,4 @@ def get_stocks_in_criteria(minimum_relative_volume:int) :
 
 
 #This script is just a potential strategy for locating which stocks to apply technical analysis, not the holy grail
+#print(selection1(2))
