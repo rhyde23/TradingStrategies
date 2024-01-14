@@ -29,4 +29,4 @@ def selection1(minimum_relative_volume:int) :
 
 
 #This script is just a potential strategy for locating which stocks to apply technical analysis, not the holy grail
-#print(selection1(2))
+print(selection1(2))
