@@ -1,5 +1,5 @@
 #This script calculates the variety of indicators used for entrance/exit strategies
-
+import time
 #Import the Python package yfinance. yfinance is an open source project that scrapes stock quotes and other stock data from Yahoo Finance
 import yfinance as yf
 
@@ -93,15 +93,15 @@ def calculate_macd(combinations:list, i:int) :
         #Update the MACD EMA value using the "update_ema" function
         macd_emas[x] = update_ema(macd_emas[x], macd_exponential_percentages[x], macds[x])
 
-#Main function to return a stock's technical indicator values
+#Main function to return a stocks' technical indicator values
 #Input = pending
-def calculate_indicators(ticker:str, rsi_periods:list, ema_periods:list, macd_combinations:list) :
+def calculate_indicators(ticker:str, rsi_periods:list, ema_periods:list, macd_combinations:list, historical_data_period:int) :
     
     #Declare global scope for all of these variables
     global hist_data, avg_gains, avg_losses, exponential_percentages, emas, fast_exponential_percentages, slow_exponential_percentages, macd_exponential_percentages, fast_emas, slow_emas, macds, macd_emas
     
-    #Access stock's historical data from yahoo finance
-    hist_data = yf.Ticker(ticker).history(period="1000D")
+    #Access stocks' historical data from yahoo finance
+    hist_data = yf.Ticker(ticker).history(period=str(historical_data_period)+"D")
 
     #Set the default average gain and average loss values for each period to 0 for RSI calculations
     avg_gains, avg_losses = [0]*len(rsi_periods), [0]*len(rsi_periods)
@@ -111,28 +111,25 @@ def calculate_indicators(ticker:str, rsi_periods:list, ema_periods:list, macd_co
 
     #Set all the EMA's for each input period to the first available closing price from the yahoo finance data for EMA calculations
     emas = [hist_data.iloc[0]["Close"]]*len(ema_periods)
+        
+    #Calculate the exponential percentages for the fast EMA period using the exponential percentage formula 
+    fast_exponential_percentages = [2/(combination[0]+1) for combination in macd_combinations]
 
-    #Loop that iterates through every MACD combination and populates each empty list for MACD calculations
-    for combination in macd_combinations :
+    #Calculate the exponential percentages for the slow EMA period using the exponential percentage formula 
+    slow_exponential_percentages = [2/(combination[1]+1) for combination in macd_combinations]
 
-        #Calculate the exponential percentage for the fast EMA period using the exponential percentage formula 
-        fast_exponential_percentages.append(2/(combination[0]+1))
+    #Calculate the exponential percentages for the MACD EMA period using the exponential percentage formula 
+    macd_exponential_percentages = [2/(combination[2]+1) for combination in macd_combinations]
 
-        #Calculate the exponential percentage for the slow EMA period using the exponential percentage formula 
-        slow_exponential_percentages.append(2/(combination[1]+1))
+    #Set fast period EMA's and slow period EMA's to the default value of the first closing price from the yfinance closing price data 
+    fast_emas = [hist_data.iloc[0]["Close"]]*len(macd_combinations)
+    slow_emas = [hist_data.iloc[0]["Close"]]*len(macd_combinations)
 
-        #Calculate the exponential percentage for the MACD EMA period using the exponential percentage formula
-        macd_exponential_percentages.append(2/(combination[2]+1))
+    #Set MACD's and MACD's EMA's to a null value 
+    macds = [None]*len(macd_combinations)
+    macd_emas = [None]*len(macd_combinations)
 
-        #Set fast period EMA's and slow period EMA's to the default value of the first closing price from the yfinance closing price data 
-        fast_emas.append(hist_data.iloc[0]["Close"])
-        slow_emas.append(hist_data.iloc[0]["Close"])
-
-        #Set MACD's and MACD's EMA's to a null value 
-        macds.append(None)
-        macd_emas.append(None)
-
-    #Main loop that iterates through every day's closing stock price going back in history, ideally starts 1000 days ago
+    #Main loop that iterates through every day's closing stock price going back in history
     for i in range(1, len(hist_data)) :
         calculate_rsi(rsi_periods, i)
         calculate_ema(ema_periods, i)
@@ -147,11 +144,13 @@ def calculate_indicators(ticker:str, rsi_periods:list, ema_periods:list, macd_co
     #Print test results
     print(rsis)
     print(emas)
-    print(macds)
+    print(macds)      
 
 rsi_test = [5, 9, 14]
 ema_test = [10, 20, 50, 100, 200]
 macd_test =[(12, 26, 9), (5, 35, 5), (19, 39, 9)]
 
-calculate_indicators("AMZN", rsi_test, ema_test, macd_test)
+start = time.time()
+calculate_indicators("MSFT", rsi_test, ema_test, macd_test, 1000)
+print(time.time()-start)
 
