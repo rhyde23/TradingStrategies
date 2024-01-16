@@ -1,6 +1,6 @@
 #This script will run every interval
 
-import calculateIndicators, itertools, requests
+import calculateIndicators, requests
 from bs4 import BeautifulSoup 
 
 #SELECTION STRATEGIES
@@ -39,20 +39,32 @@ def selection2() :
 
 #ENTRANCE STRATEGIES
 
+#Dictionary to pass to calculateIndicators.calculate_indicators that signals which values of which indicators to calculate
 indicator_inputs_required = {
-    "RSI":[],
-    "EMA":[],
-    "MACD":[],
+    "RSI":[9, 14],
+    "EMA":[9, 20, 21, 50],
+    "MACD":[(12, 26, 29),(5, 35, 5)]
 }
 
+#Indicator outputs dictionary that will be populated when calculateIndicators.calculate_indicators is executed
+indicator_outputs = {}
+
+#Possible entrance strategy based on a mid-term analysis
 def entrance1() :
-    pass
+    if indicator_outputs["RSI"][14] > 70 and indicator_outputs["EMA"][20] > indicator_outputs["EMA"][50] and indicator_outputs["MACD"][(12, 26, 9)][0] > indicator_outputs["MACD"][(12, 26, 9)][1] :
+        return 1
+    if indicator_outputs["RSI"][14] < 30 and indicator_outputs["EMA"][20] < indicator_outputs["EMA"][50] and indicator_outputs["MACD"][(12, 26, 9)][0] > indicator_outputs["MACD"][(12, 26, 9)][1] :
+        return 2
+    return 0
 
+#Possible entrance strategy based on a short-term analysis
 def entrance2() :
-    pass
+    if indicator_outputs["RSI"][9] > 70 and indicator_outputs["EMA"][9] > indicator_outputs["EMA"][21] and indicator_outputs["MACD"][(5, 35, 5)][0] > indicator_outputs["MACD"][(5, 35, 5)][1] :
+        return 1
+    if indicator_outputs["RSI"][9] < 30 and indicator_outputs["EMA"][9] < indicator_outputs["EMA"][21] and indicator_outputs["MACD"][(5, 35, 5)][0] > indicator_outputs["MACD"][(5, 35, 5)][1] :
+        return 2
+    return 0
 
-def entrance3() :
-    pass
 
 #EXIT STRATEGIES
 
@@ -62,14 +74,23 @@ def exit1() :
 def exit2() :
     pass
 
-
+#Function that will execute one strategy
 def execute_strategy(stock_selection, enter_strategy, exit_strategy) :
+    global indicator_outputs
     for ticker in stock_selection :
-        #Call calculateIndicators.calculate_indicators()
+        indicator_outputs = calculateIndicators.calculate_indicators(ticker, indicator_inputs_required, 1000)
+        enter_result = enter_strategy() 
 
+#List of strategies to log performance data for 
+strategies = [
+    [],
+    [],
+    [],
+]
+
+#Main function that will run every strategy
 def main() :
-    stockSelections = [stockSelection_function() in stockSelections_functions]
-    for strategy in itertools.permutations(stockSelections, enterStrategies_functions, exitStrategies_functions) :
+    for strategy in strategies :
         #Call execute_strategy()
         pass
 
