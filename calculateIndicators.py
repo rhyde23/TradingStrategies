@@ -1,5 +1,7 @@
 #This script calculates the variety of indicators used for entrance/exit strategies
+
 import time
+
 #Import the Python package yfinance. yfinance is an open source project that scrapes stock quotes and other stock data from Yahoo Finance
 import yfinance as yf
 
@@ -7,7 +9,7 @@ import yfinance as yf
 hist_data = None
 
 #All of these global variables for indicator calculations will be populated within the "calculate_indicators" function
-avg_gains, avg_losses, exponential_percentages, emas, fast_exponential_percentages, slow_exponential_percentages, macd_exponential_percentages, fast_emas, slow_emas, macds, macd_emas = [], [], [], [], [], [], [], [], [], [], []
+indicator_outputs, avg_gains, avg_losses, fast_emas, slow_emas, macds, macd_emas = {}, [], [], [], [], [], []
 
 #Function to create the RSI "smoothing effect" based on the next closing price difference
 #Input = the current average gain/loss, the RSI period in days, and the next closing price difference between a day and its previous day
@@ -22,10 +24,10 @@ def calculate_rsi(periods:list, i:int) :
     difference = hist_data.iloc[i]["Close"]-hist_data.iloc[i-1]["Close"]
 
     #Loop that iterates through every RSI period of the function's input
-    for x in range(len(periods)) :
+    for x, period in enumerate(periods) :
 
         #If the number of days iterated so far in the Main loop hasn't reached the RSI period, keep adding the closing price difference until initial smoothing.
-        if i < periods[x] :
+        if i < period :
 
             #If the difference is a gain, add it to the average gain for this RSI period
             if difference >= 0 :
@@ -39,19 +41,19 @@ def calculate_rsi(periods:list, i:int) :
         else :
 
             #If the number of days iterated so far in the Main loop is exacly equal to the RSI period, calculate initial RSI value before smoothing by dividing the total sums so far by the RSI period in days
-            if i == periods[x] :
-                avg_gains[x] = avg_gains[x]/periods[x]
-                avg_losses[x] = avg_losses[x]/periods[x]
+            if i == period :
+                avg_gains[x] = avg_gains[x]/period
+                avg_losses[x] = avg_losses[x]/period
 
             #If the difference is a gain, smooth average gain and average loss using the difference for the average gain and 0 for the average loss
             if difference >= 0 :
-                avg_gains[x] = update_rsi(avg_gains[x], periods[x], difference)
-                avg_losses[x] = update_rsi(avg_losses[x], periods[x], 0)
+                avg_gains[x] = update_rsi(avg_gains[x], period, difference)
+                avg_losses[x] = update_rsi(avg_losses[x], period, 0)
 
             #If the difference is a loss, smooth average gain and average loss using the difference for the average loss and 0 for the average gain
             else :
-                avg_gains[x] = update_rsi(avg_gains[x], periods[x], 0)
-                avg_losses[x] = update_rsi(avg_losses[x], periods[x], -difference)
+                avg_gains[x] = update_rsi(avg_gains[x], period, 0)
+                avg_losses[x] = update_rsi(avg_losses[x], period, -difference)
 
 #Function to update any Exponential Moving Average (EMA) given a recent close value using the EMA formula
 #Input = the current EMA, the exponential percentage, and the recent close value
@@ -66,10 +68,10 @@ def calculate_ema(periods:list, i:int) :
     recent_close = hist_data.iloc[i]["Close"]
 
     #Loop that iterates through every EMA period of the function's input
-    for x in range(len(periods)) :
+    for period in periods :
 
         #Update EMA for this period using the "update_ema" function
-        emas[x] = update_ema(emas[x], exponential_percentages[x], recent_close)
+        indicator_outputs["EMA"][period] = update_ema(indicator_outputs["EMA"][period], 2/(period+1), recent_close) #2/(period in days + 1) is the formula to calculate an exponential percentage 
 
 
 #Function to calculate Moving Average Convergence/Divergences (MACD's) and their EMA's. 
@@ -77,11 +79,11 @@ def calculate_ema(periods:list, i:int) :
 def calculate_macd(combinations:list, i:int) :
 
     #Loop that iterates through every MACD combination input
-    for x in range(len(combinations)) :
+    for x, combination in enumerate(combinations) :
 
         #Update fast EMA and slow EMA for this MACD combination using the "update_ema" function
-        fast_emas[x] = update_ema(fast_emas[x], fast_exponential_percentages[x], hist_data.iloc[i]["Close"])
-        slow_emas[x] = update_ema(slow_emas[x], slow_exponential_percentages[x], hist_data.iloc[i]["Close"])
+        fast_emas[x] = update_ema(fast_emas[x], 2/(combination[0]+1), hist_data.iloc[i]["Close"]) #2/(period in days + 1) is the formula to calculate an exponential percentage
+        slow_emas[x] = update_ema(slow_emas[x], 2/(combination[1]+1), hist_data.iloc[i]["Close"]) #2/(period in days + 1) is the formula to calculate an exponential percentage
 
         #Update the MACD value using the MACD formula
         macds[x] = fast_emas[x]-slow_emas[x]
@@ -91,14 +93,15 @@ def calculate_macd(combinations:list, i:int) :
             macd_emas[x] = macds[x]
 
         #Update the MACD EMA value using the "update_ema" function
-        macd_emas[x] = update_ema(macd_emas[x], macd_exponential_percentages[x], macds[x])
-
+        macd_emas[x] = update_ema(macd_emas[x], 2/(combination[2]+1), macds[x]) #2/(period in days + 1) is the formula to calculate an exponential percentage
+ 
 #Main function to return a stocks' technical indicator values
 #Input = stock ticker, dictionary with key=technical indicator abbreviation and value=the list of different settings combinations that need to be calculated for that indicator
+
 def calculate_indicators(ticker:str, indicator_inputs:dict, historical_data_period:int) :
     
     #Declare global scope for all of these variables
-    global hist_data, avg_gains, avg_losses, exponential_percentages, emas, fast_exponential_percentages, slow_exponential_percentages, macd_exponential_percentages, fast_emas, slow_emas, macds, macd_emas
+    global indicator_outputs, hist_data, avg_gains, avg_losses, fast_emas, slow_emas, macds, macd_emas
     
     #Access stocks' historical data from yahoo finance
     hist_data = yf.Ticker(ticker).history(period=str(historical_data_period)+"D")
@@ -106,20 +109,8 @@ def calculate_indicators(ticker:str, indicator_inputs:dict, historical_data_peri
     #Set the default average gain and average loss values for each period to 0 for RSI calculations
     avg_gains, avg_losses = [0]*len(indicator_inputs["RSI"]), [0]*len(indicator_inputs["RSI"])
 
-    #Calculate the exponential percentages for each input period using the exponential percentage formula for EMA calculations
-    exponential_percentages = [2/(period+1) for period in indicator_inputs["EMA"]]
-
     #Set all the EMA's for each input period to the first available closing price from the yahoo finance data for EMA calculations
-    emas = [hist_data.iloc[0]["Close"]]*len(indicator_inputs["EMA"])
-        
-    #Calculate the exponential percentages for the fast EMA period using the exponential percentage formula 
-    fast_exponential_percentages = [2/(combination[0]+1) for combination in indicator_inputs["MACD"]]
-
-    #Calculate the exponential percentages for the slow EMA period using the exponential percentage formula 
-    slow_exponential_percentages = [2/(combination[1]+1) for combination in indicator_inputs["MACD"]]
-
-    #Calculate the exponential percentages for the MACD EMA period using the exponential percentage formula 
-    macd_exponential_percentages = [2/(combination[2]+1) for combination in indicator_inputs["MACD"]]
+    indicator_outputs["EMA"] = {inp:hist_data.iloc[0]["Close"] for inp in indicator_inputs["EMA"]}
 
     #Set fast period EMA's and slow period EMA's to the default value of the first closing price from the yfinance closing price data 
     fast_emas = [hist_data.iloc[0]["Close"]]*len(indicator_inputs["MACD"])
@@ -136,18 +127,16 @@ def calculate_indicators(ticker:str, indicator_inputs:dict, historical_data_peri
         calculate_macd(indicator_inputs["MACD"], i)
 
     #RSI results for each RSI period input using the RSI formula
-    rsis = [100-(100/(1+(avg_gains[ind]/avg_losses[ind]))) for ind in range(len(indicator_inputs["RSI"]))]
+    indicator_outputs["RSI"] = {indicator_inputs["RSI"][ind]:100-(100/(1+(avg_gains[ind]/avg_losses[ind]))) for ind in range(len(indicator_inputs["RSI"]))}
 
     #MACD and MACD EMA results for each MACD setting combination
-    macds = list(zip(macds, macd_emas))
+    macd_zipped = list(zip(macds, macd_emas))
+    indicator_outputs["MACD"] = {indicator_inputs["MACD"][ind]:macd_zipped[ind] for ind in range(len(indicator_inputs["MACD"]))}
 
-    #Print test results
-    #return rsis, emas, macds
-    print(rsis)
-    print(emas)
-    print(macds)      
+    #Return indicator_outputs dictionary
+    return indicator_outputs
 
 start = time.time()
-calculate_indicators("MSFT", {"RSI":[5, 9, 14], "EMA":[10, 20, 50, 100, 200], "MACD":[(12, 26, 9), (5, 35, 5), (19, 39, 9)]}, 1000)
-print(time.time()-start)
+calculate_indicators("AAPL", {"RSI":[5, 9, 14], "EMA":[10, 20, 50, 100, 200], "MACD":[(12, 26, 9), (5, 35, 5), (19, 39, 9)]}, 1000)
+print(time.time()-start) #Speed performance tracking
 
