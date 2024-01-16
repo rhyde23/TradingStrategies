@@ -1,7 +1,11 @@
 #This script will run every interval
 
 import calculateIndicators, requests
-from bs4 import BeautifulSoup 
+from bs4 import BeautifulSoup
+
+from datetime import datetime
+from pytz import timezone
+
 
 #SELECTION STRATEGIES
 #Selection strategy that extracts the list of 100 most traded stocks from tradingview.com and filters out stocks that don't meet the minimum relative volume of 1.5
@@ -88,11 +92,20 @@ strategies = [
     [],
 ]
 
+def stock_exchanges_are_open() :
+    tz = timezone('EST')
+    split_by_colon = str(datetime.now(tz)).split(" ")[1].split(":")
+    hour, minutes = int(split_by_colon[0]), int(split_by_colon[1])
+    minutes_elapsed = (hour*60)+minutes
+    return minutes_elapsed >= 570 and minutes_elapsed <= 960
+
 #Main function that will run every strategy
 def main() :
-    for strategy in strategies :
-        #Call execute_strategy()
-        pass
+    while True :
+        if stock_exchanges_are_open() :
+            for strategy in strategies :
+                #Call execute_strategy()
+                pass
 
 
 

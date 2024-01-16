@@ -137,6 +137,6 @@ def calculate_indicators(ticker:str, indicator_inputs:dict, historical_data_peri
     return indicator_outputs
 
 start = time.time()
-calculate_indicators("AAPL", {"RSI":[5, 9, 14], "EMA":[10, 20, 50, 100, 200], "MACD":[(12, 26, 9), (5, 35, 5), (19, 39, 9)]}, 1000)
+print(calculate_indicators("META", {"RSI":[5, 9, 14], "EMA":[10, 20, 50, 100, 200], "MACD":[(12, 26, 9), (5, 35, 5), (19, 39, 9)]}, 1000))
 print(time.time()-start) #Speed performance tracking
 
