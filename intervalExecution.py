@@ -43,14 +43,6 @@ def selection2() :
 
 #ENTRANCE STRATEGIES
 
-#Dictionary to pass to calculateIndicators.calculate_indicators that signals which values of which indicators to calculate
-indicator_inputs_required = {
-    "RSI":[9, 14],
-    "EMA":[9, 20, 21, 50],
-    "MACD":[(12, 26, 29),(5, 35, 5)]
-}
-
-#Indicator outputs dictionary that will be populated when calculateIndicators.calculate_indicators is executed
 indicator_outputs = {}
 
 #Possible entrance strategy based on a mid-term analysis
@@ -59,7 +51,6 @@ def entrance1() :
         return 1
     if indicator_outputs["RSI"][14] < 30 and indicator_outputs["EMA"][20] < indicator_outputs["EMA"][50] and indicator_outputs["MACD"][(12, 26, 9)][0] > indicator_outputs["MACD"][(12, 26, 9)][1] :
         return 2
-    return 0
 
 #Possible entrance strategy based on a short-term analysis
 def entrance2() :
@@ -67,8 +58,6 @@ def entrance2() :
         return 1
     if indicator_outputs["RSI"][9] < 30 and indicator_outputs["EMA"][9] < indicator_outputs["EMA"][21] and indicator_outputs["MACD"][(5, 35, 5)][0] > indicator_outputs["MACD"][(5, 35, 5)][1] :
         return 2
-    return 0
-
 
 #EXIT STRATEGIES
 
@@ -78,19 +67,31 @@ def exit1() :
 def exit2() :
     pass
 
-#Function that will execute one strategy
-def execute_strategy(stock_selection, enter_strategy, exit_strategy) :
-    global indicator_outputs
-    for ticker in stock_selection :
-        indicator_outputs = calculateIndicators.calculate_indicators(ticker, indicator_inputs_required, 1000)
-        enter_result = enter_strategy() 
+#######################################################################################################################################################################################
 
-#List of strategies to log performance data for 
+#Dictionary to pass to calculateIndicators.calculate_indicators that signals which values of which indicators to calculate
+indicator_inputs_required = {
+    "RSI":[9, 14],
+    "EMA":[9, 20, 21, 50],
+    "MACD":[(12, 26, 29),(5, 35, 5)]
+}
+
+
+#List of strategies to log performance data for
+
+stock_selection_strategies = [selection1, selection2]
+
 strategies = [
-    [],
-    [],
-    [],
+    [entrance1, exit1],
+    [entrance2, exit2],
 ]
+
+#######################################################################################################################################################################################
+
+#List to track what stocks each strategy is currently holding
+strategies_currently_holding = [[]]*(len(strategies)*len(stock_selection_strategies))
+
+stock_selections = [[]]*len(stock_selection_strategies)
 
 def stock_exchanges_are_open() :
     tz = timezone('EST')
@@ -101,11 +102,28 @@ def stock_exchanges_are_open() :
 
 #Main function that will run every strategy
 def main() :
+    global indicator_outputs
     while True :
-        if stock_exchanges_are_open() :
-            for strategy in strategies :
-                #Call execute_strategy()
-                pass
+        if not stock_exchanges_are_open() :
+            print("Stock exchanges are closed")
+            break
+
+        for stock_selection_strategy_index, stock_selection_strategy in enumerate(stock_selection_strategies) :
+            stock_selections[stock_selection_strategy_index] = stock_selection_strategy()
+
+        for stock_selections_index, stock_selections in enumerate(stock_selections) :
+            for ticker in stock_selections :
+                indicator_outputs = calculateIndicators.calculate_indicators(ticker, indicator_inputs_required, 1000)
+                for strategy_index, strategy in enumerate(strategies) :
+
+                    if not ticker in #IF NOT TICKER ALREADY CURRENTLY HOLDED 
+
+                    
+                    enter_result = enter_strategy()
+                    if enter_result == 1 :
+                        pass
+                    elif enter_result == 2 :
+                        pass
 
 
 

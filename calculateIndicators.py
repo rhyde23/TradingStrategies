@@ -1,6 +1,6 @@
 #This script calculates the variety of indicators used for entrance/exit strategies
 
-import time
+#import time
 
 #Import the Python package yfinance. yfinance is an open source project that scrapes stock quotes and other stock data from Yahoo Finance
 import yfinance as yf
@@ -136,7 +136,8 @@ def calculate_indicators(ticker:str, indicator_inputs:dict, historical_data_peri
     #Return indicator_outputs dictionary
     return indicator_outputs
 
+"""
 start = time.time()
 print(calculate_indicators("META", {"RSI":[5, 9, 14], "EMA":[10, 20, 50, 100, 200], "MACD":[(12, 26, 9), (5, 35, 5), (19, 39, 9)]}, 1000))
 print(time.time()-start) #Speed performance tracking
-
+"""
