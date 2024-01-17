@@ -1,10 +1,29 @@
-#This script will run every interval
+#Run this script before 8:30 AM every morning M-F
 
-import calculateIndicators, requests
+import calculateIndicators, requests, subprocess, sys
 from bs4 import BeautifulSoup
 
 from datetime import datetime
 from pytz import timezone
+
+#This function checks to see if yfinance is up-to-date
+def check_up_to_date(name):
+    latest_version = str(subprocess.run([sys.executable, '-m', 'pip', 'install', '{}==random'.format(name)], capture_output=True, text=True))
+    latest_version = latest_version[latest_version.find('(from versions:')+15:]
+    latest_version = latest_version[:latest_version.find(')')]
+    latest_version = latest_version.replace(' ','').split(',')[-1]
+
+    current_version = str(subprocess.run([sys.executable, '-m', 'pip', 'show', '{}'.format(name)], capture_output=True, text=True))
+    current_version = current_version[current_version.find('Version:')+8:]
+    current_version = current_version[:current_version.find('\\n')].replace(' ','') 
+
+    return latest_version == current_version
+
+#Quit program if yfinance is not up-to-date
+if not check_up_to_date("yfinance") :
+    print("yfinance is not up-to-date. Run \"pip install yfinance --upgrade\" to update yfinance.")
+    quit()
+
 
 
 #SELECTION STRATEGIES
@@ -61,11 +80,23 @@ def entrance2() :
 
 #EXIT STRATEGIES
 
-def exit1() :
-    pass
+def exit1(ticker) :
+    if strategies_performance_tracking["Holding"][ticker][1] == 1 :
+        if indicator_outputs["RSI"][14] < 30 and indicator_outputs["EMA"][20] < indicator_outputs["EMA"][50] and indicator_outputs["MACD"][(12, 26, 9)][0] > indicator_outputs["MACD"][(12, 26, 9)][1] :
+            return True
+    if strategies_performance_tracking["Holding"][ticker][1] == 2 :
+        if indicator_outputs["RSI"][14] > 70 and indicator_outputs["EMA"][20] > indicator_outputs["EMA"][50] and indicator_outputs["MACD"][(12, 26, 9)][0] > indicator_outputs["MACD"][(12, 26, 9)][1] :
+            return True
+    return False
 
-def exit2() :
-    pass
+def exit2(ticker) :
+    if strategies_performance_tracking["Holding"][ticker][1] == 1 :
+        if indicator_outputs["RSI"][9] < 30 and indicator_outputs["EMA"][9] < indicator_outputs["EMA"][21] and indicator_outputs["MACD"][(5, 35, 5)][0] > indicator_outputs["MACD"][(5, 35, 5)][1] :
+            return True
+    if strategies_performance_tracking["Holding"][ticker][1] == 2 :
+        if indicator_outputs["RSI"][9] > 70 and indicator_outputs["EMA"][9] > indicator_outputs["EMA"][21] and indicator_outputs["MACD"][(5, 35, 5)][0] > indicator_outputs["MACD"][(5, 35, 5)][1] :
+            return True
+    return False
 
 #######################################################################################################################################################################################
 
@@ -89,7 +120,7 @@ strategies = [
 #######################################################################################################################################################################################
 
 #List to track what stocks each strategy is currently holding
-strategies_performance_tracking = [{"Holding":{}, "MaxHolding":0}]*(len(strategies)*len(stock_selection_strategies))
+strategies_performance_tracking = [{"Holding":{}, "MaxHolding":0, "Exited":{}}]*(len(strategies)*len(stock_selection_strategies))
 
 #List that will be populated by calling the stock selection strategy functions at the start of every iteration of the main loop.
 #By calling the stock selection strategy functions at the start of every iteration and storing the selections, the main function saves the time from calling them for every single strategy permuation
@@ -113,9 +144,9 @@ def stock_exchanges_are_open() :
 #Main function that will run every strategy
 def main() :
 
-    #Indicate global status of indicator_outputs within this function. This variable is referenced within the Entrance and Exit Strategies.
-    #It will be populated and updated with the proper values for each stock ticker in each strategy permutation
-    global indicator_outputs
+    #Indicate global statuses of "indicator_outputs" and "strategies_performance_tracking" within this function. These variable is referenced within the Entrance and Exit Strategies.
+    #"indicator_outputs" will be populated and updated with the proper values for each stock ticker in each strategy permutation
+    global indicator_outputs, strategies_performance_tracking
 
     #Main Loop of main function that will repeat during the whole trading day
     while True :
@@ -155,16 +186,27 @@ def main() :
 
                     #If the ticker is currently held within this strategy permuation 
                     if ticker in strategies_performance_tracking[true_strategy_index]["Holding"] :  
-                        exit_result = enter_strategy()
+                        exit_result = exit_strategy()
+                        
 
                     #If the ticker is not currently held within this strategy permuation 
                     else :
-                        #
+                        
+                        #Obtain decision whether to do nothing, buy, or short this stock based on this entrance strategy (1=buy, 2=short)
                         enter_result = enter_strategy()
+
+                        #If the enter result is 1 or 2, enter the trade
                         if enter_result != None :
+
+                            #This line fully commits this stock in the currently holding tracker of this strategy permuation 
                             strategies_performance_tracking[true_strategy_index]["Holding"][ticker] = (indicator_outputs["CurrentPrice"], enter_result)
-                            if len(strategies_performance_tracking[true_strategy_index]["Holding"]) > strategies_performance_tracking[true_strategy_index]["MaxHolding"] :
-                                strategies_performance_tracking[true_strategy_index]["MaxHolding"] = len(strategies_performance_tracking[true_strategy_index]["Holding"])
+
+                            #currently_holding is the number of stocks this strategy permuatation is currently holding 
+                            currently_holding = len(strategies_performance_tracking[true_strategy_index]["Holding"])
+
+                            #If the currently_holding number is greater than the Max Holding performance tracker, update 
+                            if currently_holding > strategies_performance_tracking[true_strategy_index]["MaxHolding"] :
+                                strategies_performance_tracking[true_strategy_index]["MaxHolding"] = currently_holding
 
 
 
