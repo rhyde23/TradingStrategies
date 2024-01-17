@@ -133,6 +133,9 @@ def calculate_indicators(ticker:str, indicator_inputs:dict, historical_data_peri
     macd_zipped = list(zip(macds, macd_emas))
     indicator_outputs["MACD"] = {indicator_inputs["MACD"][ind]:macd_zipped[ind] for ind in range(len(indicator_inputs["MACD"]))}
 
+    #Add the current price of the stock to the outputs dictionary
+    indicator_outputs["CurrentPrice"] = hist_data.iloc[-1]["Close"]
+    
     #Return indicator_outputs dictionary
     return indicator_outputs
 
