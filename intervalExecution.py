@@ -25,6 +25,9 @@ if not check_up_to_date("yfinance") :
     quit()
 
 
+#######################################################################################################################################################################################
+
+
 
 #SELECTION STRATEGIES
 #Selection strategy that extracts the list of 100 most traded stocks from tradingview.com and filters out stocks that don't meet the minimum relative volume of 1.5
@@ -56,22 +59,11 @@ def selection1() :
     #Return accepted list of stock tickers
     return accepted
 
-#Selection strategy that simply returns the "Big 7" tech stock of the modern era
-def selection2() :
-    return ["AAPL", "AMZN", "MSFT", "NVDA", "META", "TSLA", "GOOG"]
-
 #For Testing purposes
 def test_selection() :
     return ["MSFT"]
 
-#GLOBAL VARIABLES FOR ENTRANCE AND EXIT FUNCTIONS
-indicator_outputs = {}
-true_strategy_index = 0
-ticker = ""
-
 #ENTRANCE STRATEGIES
-
-indicator_outputs = {}
 
 #Possible entrance strategy based on a mid-term analysis
 def entrance1() :
@@ -123,7 +115,18 @@ def test_exit() :
         return indicator_outputs["RSI"][3] < 88
 
 
+
+
+
+
 #######################################################################################################################################################################################
+all_indicator_outputs = {}
+
+indicator_outputs = {}
+
+true_strategy_index = 0
+
+ticker = ""
 
 #Dictionary to pass to calculateIndicators.calculate_indicators that signals which values of which indicators to calculate
 indicator_inputs_required = {
@@ -142,7 +145,7 @@ indicator_inputs_required = {
 
 #List of strategies to log performance data for
 
-stock_selection_strategies = [selection1, selection2]
+stock_selection_strategies = [selection1]
 
 strategies = [
     (entrance1, exit1),
@@ -155,14 +158,18 @@ strategies = [
     (test_entrance, test_exit)
 ]
 
-#######################################################################################################################################################################################
-
 #List to track what stocks each strategy is currently holding
 strategies_performance_tracking = [{"Holding":{}, "MaxHolding":0, "Exited":[]}]*(len(strategies)*len(stock_selection_strategies))
 
 #List that will be populated by calling the stock selection strategy functions at the start of every iteration of the main loop.
 #By calling the stock selection strategy functions at the start of every iteration and storing the selections, the main function saves the time from calling them for every single strategy permuation
 stock_selections = [[]]*len(stock_selection_strategies)
+
+#######################################################################################################################################################################################
+
+
+
+
 
 #This function gets the current minutes elapsed in Eastern Time
 def get_minutes_elapsed() :
@@ -183,6 +190,17 @@ def main() :
     #"indicator_outputs" will be populated and updated with the proper values for each stock ticker in each strategy permutation
     global indicator_outputs, strategies_performance_tracking, true_strategy_index, ticker
 
+
+
+
+    for stock_selection_strategy_index, stock_selection_strategy in enumerate(stock_selection_strategies) :
+        for t in stock_selection_strategy() :
+            ticker, price = t
+            all_indicator_outputs[ticker] = calculateIndicators.calculate_indicators(ticker, indicator_inputs_required, 1000)
+
+
+
+    
     #For Testing Purposes
     start = get_minutes_elapsed()
     
