@@ -126,8 +126,8 @@ strategies_performance_tracking = [{"Holding":{}, "MaxHolding":0, "Exited":{}}]*
 #By calling the stock selection strategy functions at the start of every iteration and storing the selections, the main function saves the time from calling them for every single strategy permuation
 stock_selections = [[]]*len(stock_selection_strategies)
 
-#This function checks if the current Eastern Time is between the hours of 9:30 am and 4:00 pm, which is the trading day for the Nasdaq and NYSE 
-def stock_exchanges_are_open() :
+#This function gets the current minutes elapsed in Eastern Time
+def get_minutes_elapsed() :
     #First, get the time in Eastern Time
     tz = timezone('EST')
 
@@ -135,11 +135,8 @@ def stock_exchanges_are_open() :
     split_by_colon = str(datetime.now(tz)).split(" ")[1].split(":")
     hour, minutes = int(split_by_colon[0]), int(split_by_colon[1])
 
-    #Calculate the total minutes elapsed
-    minutes_elapsed = (hour*60)+minutes
-
-    #Return if minutes are between 9:30 am and 4:00 pm
-    return minutes_elapsed >= 570 and minutes_elapsed <= 960
+    #Calculate the and return total minutes elapsed
+    return (hour*60)+minutes
 
 #Main function that will run every strategy
 def main() :
@@ -155,7 +152,9 @@ def main() :
         #calculateIndicators.calculate_indicators("MSFT", indicator_inputs_required, 1000)
 
         #Break the main loop if the stock exhchanges are not open
-        if not stock_exchanges_are_open() :
+        #This will check if the current Eastern Time is between the hours of 9:30 am and 4:00 pm, which is the trading day for the Nasdaq and NYSE 
+        minutes_elapsed = get_minutes_elapsed()
+        if not (minutes_elapsed >= 570 and minutes_elapsed <= 960) :
             print("Stock exchanges are closed")
             break
 
@@ -185,8 +184,16 @@ def main() :
                     true_strategy_index = (stock_selections_index*len(stock_selection_strategies))+strategy_index
 
                     #If the ticker is currently held within this strategy permuation 
-                    if ticker in strategies_performance_tracking[true_strategy_index]["Holding"] :  
-                        exit_result = exit_strategy()
+                    if ticker in strategies_performance_tracking[true_strategy_index]["Holding"] :
+
+                        #Call the exit strategy function for this strategy permutation to get result
+                        if exit_strategy() :
+
+                            #Record this exit data in the "strategies_performance_tracking" dictionary for this strategy permutation
+                            strategies_performance_tracking[true_strategy_index]["Exited"].append((ticker)+(strategies_performance_tracking[true_strategy_index]["Holding"][ticker])+(indicator_outputs["CurrentPrice"]))
+
+                            #Delete this holding from the currently holding tracking for this strategy permutation
+                            del strategies_performance_tracking[true_strategy_index]["Holding"][ticker]
                         
 
                     #If the ticker is not currently held within this strategy permuation 
