@@ -60,6 +60,15 @@ def selection1() :
 def selection2() :
     return ["AAPL", "AMZN", "MSFT", "NVDA", "META", "TSLA", "GOOG"]
 
+#For Testing purposes
+def test_selection() :
+    return ["MSFT"]
+
+#GLOBAL VARIABLES FOR ENTRANCE AND EXIT FUNCTIONS
+indicator_outputs = {}
+true_strategy_index = 0
+ticker = ""
+
 #ENTRANCE STRATEGIES
 
 indicator_outputs = {}
@@ -78,25 +87,41 @@ def entrance2() :
     if indicator_outputs["RSI"][9] < 30 and indicator_outputs["EMA"][9] < indicator_outputs["EMA"][21] and indicator_outputs["MACD"][(5, 35, 5)][0] > indicator_outputs["MACD"][(5, 35, 5)][1] :
         return 2
 
+#For Testing purposes
+def test_entrance() :
+    if indicator_outputs["RSI"][3] < 88 :
+        return 1
+    if indicator_outputs["RSI"][3] > 88 :
+        return 2
+    
+
 #EXIT STRATEGIES
 
-def exit1(ticker) :
-    if strategies_performance_tracking["Holding"][ticker][1] == 1 :
+def exit1() :
+    if strategies_performance_tracking[ticker]["Holding"][1] == 1 :
         if indicator_outputs["RSI"][14] < 30 and indicator_outputs["EMA"][20] < indicator_outputs["EMA"][50] and indicator_outputs["MACD"][(12, 26, 9)][0] > indicator_outputs["MACD"][(12, 26, 9)][1] :
             return True
-    if strategies_performance_tracking["Holding"][ticker][1] == 2 :
+    if strategies_performance_tracking[ticker]["Holding"][1] == 2 :
         if indicator_outputs["RSI"][14] > 70 and indicator_outputs["EMA"][20] > indicator_outputs["EMA"][50] and indicator_outputs["MACD"][(12, 26, 9)][0] > indicator_outputs["MACD"][(12, 26, 9)][1] :
             return True
     return False
 
-def exit2(ticker) :
-    if strategies_performance_tracking["Holding"][ticker][1] == 1 :
+def exit2() :
+    if strategies_performance_tracking[ticker]["Holding"][1] == 1 :
         if indicator_outputs["RSI"][9] < 30 and indicator_outputs["EMA"][9] < indicator_outputs["EMA"][21] and indicator_outputs["MACD"][(5, 35, 5)][0] > indicator_outputs["MACD"][(5, 35, 5)][1] :
             return True
-    if strategies_performance_tracking["Holding"][ticker][1] == 2 :
+    if strategies_performance_tracking[ticker]["Holding"][1] == 2 :
         if indicator_outputs["RSI"][9] > 70 and indicator_outputs["EMA"][9] > indicator_outputs["EMA"][21] and indicator_outputs["MACD"][(5, 35, 5)][0] > indicator_outputs["MACD"][(5, 35, 5)][1] :
             return True
     return False
+
+#For Testing Purposes
+def test_exit() :
+    if strategies_performance_tracking[true_strategy_index]["Holding"][ticker][1] == 1 :
+        return indicator_outputs["RSI"][3] > 88 
+    if strategies_performance_tracking[true_strategy_index]["Holding"][ticker][1] == 2 :
+        return indicator_outputs["RSI"][3] < 88
+
 
 #######################################################################################################################################################################################
 
@@ -105,6 +130,13 @@ indicator_inputs_required = {
     "RSI":[9, 14],
     "EMA":[9, 20, 21, 50],
     "MACD":[(12, 26, 29),(5, 35, 5)]
+}
+
+#For Testing Purposes
+indicator_inputs_required = {
+    "RSI":[3],
+    "EMA":[9],
+    "MACD":[(12, 26, 29)]
 }
 
 
@@ -117,10 +149,16 @@ strategies = [
     (entrance2, exit2),
 ]
 
+#For Testing Purposes
+stock_selection_strategies = [test_selection]
+strategies = [
+    (test_entrance, test_exit)
+]
+
 #######################################################################################################################################################################################
 
 #List to track what stocks each strategy is currently holding
-strategies_performance_tracking = [{"Holding":{}, "MaxHolding":0, "Exited":{}}]*(len(strategies)*len(stock_selection_strategies))
+strategies_performance_tracking = [{"Holding":{}, "MaxHolding":0, "Exited":[]}]*(len(strategies)*len(stock_selection_strategies))
 
 #List that will be populated by calling the stock selection strategy functions at the start of every iteration of the main loop.
 #By calling the stock selection strategy functions at the start of every iteration and storing the selections, the main function saves the time from calling them for every single strategy permuation
@@ -143,18 +181,21 @@ def main() :
 
     #Indicate global statuses of "indicator_outputs" and "strategies_performance_tracking" within this function. These variable is referenced within the Entrance and Exit Strategies.
     #"indicator_outputs" will be populated and updated with the proper values for each stock ticker in each strategy permutation
-    global indicator_outputs, strategies_performance_tracking
+    global indicator_outputs, strategies_performance_tracking, true_strategy_index, ticker
 
+    #For Testing Purposes
+    start = get_minutes_elapsed()
+    
     #Main Loop of main function that will repeat during the whole trading day
     while True :
 
-        #Testing line
+        #For Testing Purposes
         #calculateIndicators.calculate_indicators("MSFT", indicator_inputs_required, 1000)
 
         #Break the main loop if the stock exhchanges are not open
         #This will check if the current Eastern Time is between the hours of 9:30 am and 4:00 pm, which is the trading day for the Nasdaq and NYSE 
         minutes_elapsed = get_minutes_elapsed()
-        if not (minutes_elapsed >= 570 and minutes_elapsed <= 960) :
+        if not (minutes_elapsed >= 570 and minutes_elapsed <= start+5) :  #For Testing Purposes, 4:00 pm = 960
             print("Stock exchanges are closed")
             break
 
@@ -164,13 +205,19 @@ def main() :
             stock_selections[stock_selection_strategy_index] = stock_selection_strategy()
 
         #This loop iterates through each stock selection 
-        for stock_selections_index, stock_selections in enumerate(stock_selections) :
+        for stock_selections_index, stock_selection in enumerate(stock_selections) :
 
             #This loop iterates through each stock ticker for an individual stock selection
-            for ticker in stock_selections :
+            for t in stock_selection :
+
+                #Update global variable "ticker"
+                ticker = t
 
                 #indicator_outputs is updated for this new ticker with every indicator it will need for the Entrance and Exit Strategies' execution
                 indicator_outputs = calculateIndicators.calculate_indicators(ticker, indicator_inputs_required, 1000)
+
+                #For Testing Purposes 
+                print(indicator_outputs["RSI"][3])
 
                 #This loop iterates through each permutation of entrance strategy and exit strategy.
                 for strategy_index, strategy in enumerate(strategies) :
@@ -190,7 +237,7 @@ def main() :
                         if exit_strategy() :
 
                             #Record this exit data in the "strategies_performance_tracking" dictionary for this strategy permutation
-                            strategies_performance_tracking[true_strategy_index]["Exited"].append((ticker)+(strategies_performance_tracking[true_strategy_index]["Holding"][ticker])+(indicator_outputs["CurrentPrice"]))
+                            strategies_performance_tracking[true_strategy_index]["Exited"].append((ticker, strategies_performance_tracking[true_strategy_index]["Holding"][ticker][0], strategies_performance_tracking[true_strategy_index]["Holding"][ticker][1], indicator_outputs["CurrentPrice"]))
 
                             #Delete this holding from the currently holding tracking for this strategy permutation
                             del strategies_performance_tracking[true_strategy_index]["Holding"][ticker]
@@ -215,6 +262,9 @@ def main() :
                             if currently_holding > strategies_performance_tracking[true_strategy_index]["MaxHolding"] :
                                 strategies_performance_tracking[true_strategy_index]["MaxHolding"] = currently_holding
 
+    #For right now just return the performance tracking dictionary, but eventually store metrics in Excel Sheet
+    return strategies_performance_tracking
 
 
-main()
+
+print(main())
