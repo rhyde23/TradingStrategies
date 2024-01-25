@@ -29,7 +29,7 @@ time.sleep(3)
 driver.fullscreen_window()
 
 password = driver.find_element(By.ID, "login-passwd")
-password.send_keys("***REMOVED***")
+password.send_keys("PythonIsAwesome!")
 
 next_button2 = driver.find_element(By.NAME, "verifyPassword")
 next_button2.click()
