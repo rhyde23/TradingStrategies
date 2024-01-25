@@ -154,7 +154,8 @@ def open_webbdriver(user_email, user_password) :
 def scrape_live_data() :
     return list(zip([element.text for element in driver.find_elements(By.XPATH, "//td/a[@data-test='quoteLink']")], [float(element.text) for element in driver.find_elements(By.XPATH, "//td/fin-streamer[@data-field='regularMarketPrice']")]))
 
-def main() :
+def main(testing_mode) :
+    global ticker, price
     user_email = "reginaldjhyde@gmail.com"
     user_password = "PythonIsAwesome!"
     open_webbdriver(user_email, user_password)
@@ -163,18 +164,20 @@ def main() :
         indicator_historical[scraped_stock[0]] = calculate_historical_indicators(scraped_stock[0], indicator_data_points_needed, indicator_inputs_required)
 
     while True :
-        minutes_elapsed = get_minutes_elapsed()
-        if not (minutes_elapsed >= 570 and minutes_elapsed <= 960) :
-            print("Stock exchanges are closed")
-            break
+        if not testing_mode :
+            minutes_elapsed = get_minutes_elapsed()
+            if not (minutes_elapsed >= 570 and minutes_elapsed <= 960) :
+                print("Stock exchanges are closed")
+                break
 
         scraped_data = scrape_live_data()
         for scraped_stock in scraped_data :
             ticker, price = scraped_stock
+            print(ticker, price)
             update_indicator_outputs()
             
             for strategy in strategies :
-                if 
-main()
+                x = 5
+main(True)
 
 
