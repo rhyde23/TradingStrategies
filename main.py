@@ -171,14 +171,16 @@ def main(testing_mode) :
                 print("Stock exchanges are closed")
                 break
 
+        start = time.time()
+        
         scraped_data = scrape_live_data()
         for scraped_stock in scraped_data :
             ticker, price = scraped_stock
-            print(ticker, price)
+            #print(ticker, price)
             update_indicator_outputs()
             
-            for strategy in strategies :
-                x = 5
+        print("Completed in ", time.time()-start)
+            #for strategy in strategies 
 main(True)
 
 
