@@ -67,10 +67,10 @@ strategies = [
     (selection1, entrance1, exit1)
 ]
 
-strategies_performance_tracking = [{"Holding":{}, "MaxHolding":0, "Exited":[]}]*len(strategies)
+#Holding, Exited, MaxHolding
+strategies_performance_tracking = [[{}, [], 0]]*len(strategies)
 
 #Indicator Functionality
-
 
 def update_indicator_outputs() :
     difference = price-indicator_historical[ticker][0]
@@ -176,11 +176,22 @@ def main(testing_mode) :
         scraped_data = scrape_live_data()
         for scraped_stock in scraped_data :
             ticker, price = scraped_stock
-            #print(ticker, price)
             update_indicator_outputs()
+            for strategy_index, strategy in enumerate(strategies) :
+                if ticker in strategies_performance_tracking[strategy_index][0] :
+                    if strategy[2]() :
+                        strategies_performance_tracking[strategy_index][1].append((ticker)+strategies_performance_tracking[strategy_index][0]+(price))
+                        del strategies_performance_tracking[strategy_index][0][ticker]
+                else :
+                    if strategy[0]() :
+                        entrance_result = strategy[1]()
+                        if entrance_result != None :
+                            strategies_performance_tracking[strategy_index][0][ticker] = (price, entrance_result)
+                            current_holding = len(strategies_performance_tracking[strategy_index][0][ticker])
+                            strategies_performance_tracking[strategy_index][2][ticker] = max(current_holding, strategies_performance_tracking[strategy_index][2][ticker])
             
         print("Completed in ", time.time()-start)
-            #for strategy in strategies 
+
 main(True)
 
 
