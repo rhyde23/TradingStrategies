@@ -5,7 +5,7 @@ from pytz import timezone
 import yfinance as yf
 from selenium import webdriver
 from selenium.webdriver.common.by import By
-from calculateHistoricalIndicatorData import calculate_historical_indicators, avg_change_formula, ema_formula, rsi_formula
+from calculateHistoricalIndicatorData import calculate_historical_data, avg_change_formula, ema_formula, rsi_formula
 
 #This function checks to see if yfinance is up-to-date
 def check_up_to_date(name):
@@ -43,6 +43,9 @@ def exit1() :
 
 #Globals
 
+indicators_available = ["RSI", "EMA", "MACD"]
+stock_statistics_available = ["MARKET_CAP", "VOLUME", "RELATIVE_VOLUME"]
+
 indicator_inputs_required = {
     "RSI":[5, 9, 14],
     "EMA":[10, 20, 50, 100, 200],
@@ -55,13 +58,17 @@ indicator_data_points_needed = {
     "MACD":3,
 }
 
-indicator_outputs = {indicator_name:{} for indicator_name in indicator_inputs_required}
+stock_statistics_required = ["marketCap", "averageVolume"]
+
+indicators = {indicator_name:{} for indicator_name in indicator_inputs_required}
+stock_statistics = {}
 
 indicator_historical = {}
+stock_statistics_historical = {}
 
 ticker = ""
-
 price = 0
+volume = 0
 
 strategies = [
     (selection1, entrance1, exit1)
@@ -72,7 +79,7 @@ strategies_performance_tracking = [[{}, [], 0]]*len(strategies)
 
 #Indicator Functionality
 
-def update_indicator_outputs() :
+def update_indicators() :
     difference = price-indicator_historical[ticker][0]
     loading_index = 1
     for period in indicator_inputs_required["RSI"] :
@@ -83,12 +90,12 @@ def update_indicator_outputs() :
             avg_gain = avg_change_formula(indicator_historical[ticker][loading_index], period, 0)
             avg_loss = avg_change_formula(indicator_historical[ticker][loading_index+1], period, -difference)
             
-        indicator_outputs["RSI"][period] = round(rsi_formula(avg_gain, avg_loss), 4)
+        indicators["RSI"][period] = round(rsi_formula(avg_gain, avg_loss), 4)
 
         loading_index += indicator_data_points_needed["RSI"]
             
     for period in indicator_inputs_required["EMA"] :
-        indicator_outputs["EMA"][period] = round(ema_formula(price, period, indicator_historical[ticker][loading_index]), 4)
+        indicators["EMA"][period] = round(ema_formula(price, period, indicator_historical[ticker][loading_index]), 4)
         
         loading_index += indicator_data_points_needed["EMA"]
 
@@ -99,9 +106,14 @@ def update_indicator_outputs() :
 
         macd_ema = ema_formula(fast_ema-slow_ema, combination[2], indicator_historical[ticker][loading_index+2])
 
-        indicator_outputs["MACD"][combination] = (round(fast_ema-slow_ema, 4), round(macd_ema, 4))
+        indicators["MACD"][combination] = (round(fast_ema-slow_ema, 4), round(macd_ema, 4))
 
         loading_index += indicator_data_points_needed["MACD"]
+
+def update_stock_statistics() :
+    stock_statistics["MARKET_CAP"] = stock_statistics_historical[ticker]["marketCap"]
+    stock_statistics["VOLUME"] = volume
+    stock_statistics["RELATIVE_VOLUME"] = round(volume/stock_statistics_historical[ticker]["averageVolume"], 3)
                                                                                  
 #This function gets the current minutes elapsed in Eastern Time
 def get_minutes_elapsed() :
@@ -152,17 +164,24 @@ def open_webbdriver(user_email, user_password) :
     driver.get("https://finance.yahoo.com/portfolio/p_0/view/v1")
     driver.fullscreen_window()
 
+def convert_volume_to_integer(volume_in_millions:str) :
+    number_translations = {"K":1000, "M":1000000, "B":1000000000}
+    return int(float(volume_in_millions[:-1])*number_translations[volume_in_millions[-1]])
+
 def scrape_live_data() :
-    return list(zip([element.text for element in driver.find_elements(By.XPATH, "//td/a[@data-test='quoteLink']")], [float(element.text) for element in driver.find_elements(By.XPATH, "//td/fin-streamer[@data-field='regularMarketPrice']")]))
+    scraped_tickers = [element.text for element in driver.find_elements(By.XPATH, "//td/a[@data-test='quoteLink']")]
+    scraped_prices = [float(element.text) for element in driver.find_elements(By.XPATH, "//td/fin-streamer[@data-field='regularMarketPrice']")]
+    scraped_volumes = [convert_volume_to_integer(element.text) for element in driver.find_elements(By.XPATH, "//td/fin-streamer[@data-field='regularMarketVolume']")]
+    return list(zip(scraped_tickers, scraped_prices, scraped_volumes))
 
 def main(testing_mode) :
-    global ticker, price
+    global ticker, price, volume
     user_email = "reginaldjhyde@gmail.com"
     user_password = "PythonIsAwesome!"
     open_webbdriver(user_email, user_password)
     scraped_data = scrape_live_data()
     for scraped_stock in scraped_data :
-        indicator_historical[scraped_stock[0]] = calculate_historical_indicators(scraped_stock[0], indicator_data_points_needed, indicator_inputs_required)
+        indicator_historical[scraped_stock[0]], stock_statistics_historical[scraped_stock[0]] = calculate_historical_data(scraped_stock[0], indicator_data_points_needed, indicator_inputs_required, stock_statistics_required)
 
     while True :
         if not testing_mode :
@@ -175,8 +194,13 @@ def main(testing_mode) :
         
         scraped_data = scrape_live_data()
         for scraped_stock in scraped_data :
-            ticker, price = scraped_stock
-            update_indicator_outputs()
+            ticker, price, volume = scraped_stock
+            update_indicators()
+            update_stock_statistics()
+            print(ticker, price)
+            print(indicators)
+            print(stock_statistics)
+            print()
             for strategy_index, strategy in enumerate(strategies) :
                 if ticker in strategies_performance_tracking[strategy_index][0] :
                     if strategy[2]() :
@@ -191,6 +215,7 @@ def main(testing_mode) :
                             strategies_performance_tracking[strategy_index][2][ticker] = max(current_holding, strategies_performance_tracking[strategy_index][2][ticker])
             
         print("Completed in ", time.time()-start)
+        quit()
 
 main(True)
 

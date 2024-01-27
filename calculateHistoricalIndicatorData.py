@@ -66,12 +66,13 @@ def calculate_historical_macd_data(inputs_required, data_points_needed) :
         loading_index += data_points_needed
 
         
-def calculate_historical_indicators(ticker, indicator_data_points_needed, indicator_inputs_required) :
+def calculate_historical_data(ticker, indicator_data_points_needed, indicator_inputs_required, stock_statistics_required) :
     global historical_dictionary, hist_data, day_on, loading_index
     historical_period_length = 5
+    yfinance_ticker = yf.Ticker(ticker)
     while True :
         try :
-            hist_data = yf.Ticker(ticker).history(period=str(historical_period_length)+"y")
+            hist_data = yfinance_ticker.history(period=str(historical_period_length)+"y")
             break
         except :
             pass
@@ -89,4 +90,19 @@ def calculate_historical_indicators(ticker, indicator_data_points_needed, indica
         calculate_historical_macd_data(indicator_inputs_required["MACD"], indicator_data_points_needed["MACD"])
         day_on += 1
 
-    return tuple([round(value, 5) for value in historical_dictionary])
+    return tuple([round(value, 5) for value in historical_dictionary]), {statistic_required:yfinance_ticker.info[statistic_required] for statistic_required in stock_statistics_required}
+
+
+indicator_inputs_required = {
+    "RSI":[5, 9, 14],
+    "EMA":[10, 20, 50, 100, 200],
+    "MACD":[(12, 26, 9), (5, 35, 5), (19, 39, 9)]
+}
+
+indicator_data_points_needed = {
+    "RSI":2,
+    "EMA":1,
+    "MACD":3,
+}
+
+#print(calculate_historical_data("MSFT", indicator_data_points_needed, indicator_inputs_required, ["marketCap", "averageVolume"]))
