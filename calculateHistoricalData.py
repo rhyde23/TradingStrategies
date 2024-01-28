@@ -66,7 +66,7 @@ def calculate_historical_macd_data(inputs_required, data_points_needed) :
         loading_index += data_points_needed
 
         
-def calculate_historical_data(ticker, indicator_data_points_needed, indicator_inputs_required, stock_statistics_required) :
+def calculate_historical_data(ticker, indicator_data_points_needed, indicator_inputs_required, yahoo_statistics_required) :
     global historical_dictionary, hist_data, day_on, loading_index
     historical_period_length = 5
     yfinance_ticker = yf.Ticker(ticker)
@@ -90,7 +90,7 @@ def calculate_historical_data(ticker, indicator_data_points_needed, indicator_in
         calculate_historical_macd_data(indicator_inputs_required["MACD"], indicator_data_points_needed["MACD"])
         day_on += 1
 
-    return tuple([round(value, 5) for value in historical_dictionary]), {statistic_required:yfinance_ticker.info[statistic_required] for statistic_required in stock_statistics_required}
+    return tuple([round(value, 5) for value in historical_dictionary]), {statistic_required:yfinance_ticker.info[statistic_required] for statistic_required in yahoo_statistics_required}
 
 
 indicator_inputs_required = {

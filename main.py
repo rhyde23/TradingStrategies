@@ -1,30 +1,52 @@
-#main.py
+#NOTE: This project is heavily reliant on Yahoo Finance and @ranaroussi's yfinance package, which uses Yahoo Finance's API
+
+#Imported Libraries/Scripts 
+
 import requests, subprocess, sys, time
+#requests library - For processing url requests for live scraping data from Yahoo Finance watchlist
+#subprocess and sys libraries - For checking if @ranaroussi's yfinance package is up-to-date
+#time library - For use of the time.sleep() function to assure that web pages are fully loaded before being scraped
+
 from datetime import datetime
+#datetime library - For accessing the current time and checking if the US Stock Markets are open
+
 from pytz import timezone
-import yfinance as yf
+#pytz library - For converting the current time in terms of Eastern Time
+
 from selenium import webdriver
 from selenium.webdriver.common.by import By
-from calculateHistoricalIndicatorData import calculate_historical_data, avg_change_formula, ema_formula, rsi_formula
+#selenium library - For web scraping websites with dynamic content.
+#Yahoo Finance's live stock watchlists are reliant on JavaScript, so a selenium webdriver is necessary to scrape them.
+#A webdriver basically creates a copy of a web browser and automates/mimics user input and scrapes the website
+#By contrast, Python's beautifulsoup4 can only load page sources (html).
+
+from calculateHistoricalData import calculate_historical_data, avg_change_formula, ema_formula, rsi_formula
+#calculateHistoricalData script - Written by me for the purpose of calculating all the data needed for the quick update of technical indicators and stock statistics.
+#By accessing historical data using the yfinance package, I can set up everything I need for technical indicator calculations so that the live price is the only missing piece.
+#This script also collects data such as Market Cap, Average Volume, etc. (statistics that don't need to be scraped live)
+#It is hugely important that this data collection happens separately from live scraping for effiency because this initial data collection ONLY NEEDS TO HAPPEN ONCE.
 
 #This function checks to see if yfinance is up-to-date
 def check_up_to_date(name):
+    
+    #Access the name of the latest version of the package using the terminal
     latest_version = str(subprocess.run([sys.executable, '-m', 'pip', 'install', '{}==random'.format(name)], capture_output=True, text=True))
     latest_version = latest_version[latest_version.find('(from versions:')+15:]
     latest_version = latest_version[:latest_version.find(')')]
     latest_version = latest_version.replace(' ','').split(',')[-1]
 
+    #Access the name of the current version of the package using the terminal
     current_version = str(subprocess.run([sys.executable, '-m', 'pip', 'show', '{}'.format(name)], capture_output=True, text=True))
     current_version = current_version[current_version.find('Version:')+8:]
     current_version = current_version[:current_version.find('\\n')].replace(' ','') 
 
+    #Return whether or not the two version names are the same
     return latest_version == current_version
 
 #Quit program if yfinance is not up-to-date
 if not check_up_to_date("yfinance") :
     print("yfinance is not up-to-date. Run \"pip install yfinance --upgrade\" to update yfinance.")
     quit()
-
 
 #Selection Strategies
 
@@ -42,7 +64,6 @@ def exit1() :
     pass
 
 #Globals
-
 indicators_available = ["RSI", "EMA", "MACD"]
 stock_statistics_available = ["MARKET_CAP", "VOLUME", "RELATIVE_VOLUME"]
 
@@ -58,7 +79,8 @@ indicator_data_points_needed = {
     "MACD":3,
 }
 
-stock_statistics_required = ["marketCap", "averageVolume"]
+
+yahoo_statistics_required = ["marketCap", "averageVolume"]
 
 indicators = {indicator_name:{} for indicator_name in indicator_inputs_required}
 stock_statistics = {}
@@ -111,6 +133,7 @@ def update_indicators() :
         loading_index += indicator_data_points_needed["MACD"]
 
 def update_stock_statistics() :
+    #if "MARKET_CAP" in 
     stock_statistics["MARKET_CAP"] = stock_statistics_historical[ticker]["marketCap"]
     stock_statistics["VOLUME"] = volume
     stock_statistics["RELATIVE_VOLUME"] = round(volume/stock_statistics_historical[ticker]["averageVolume"], 3)
@@ -181,7 +204,7 @@ def main(testing_mode) :
     open_webbdriver(user_email, user_password)
     scraped_data = scrape_live_data()
     for scraped_stock in scraped_data :
-        indicator_historical[scraped_stock[0]], stock_statistics_historical[scraped_stock[0]] = calculate_historical_data(scraped_stock[0], indicator_data_points_needed, indicator_inputs_required, stock_statistics_required)
+        indicator_historical[scraped_stock[0]], stock_statistics_historical[scraped_stock[0]] = calculate_historical_data(scraped_stock[0], indicator_data_points_needed, indicator_inputs_required, yahoo_statistics_required)
 
     while True :
         if not testing_mode :
