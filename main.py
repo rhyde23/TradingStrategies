@@ -177,13 +177,13 @@ def update_indicators() :
         #Increase the loading index by the number of data points that were used in this specific MACD combination setting calculation
         loading_index += indicator_data_points_needed["MACD"]
 
-def update_stock_statistics() :
-    #if "MARKET_CAP" in 
+#The "update_stock_statistics" function updates the "stock_statistics" dictionary for every new scraped live stock price.
+def update_stock_statistics() : 
     stock_statistics["MARKET_CAP"] = stock_statistics_historical[ticker]["marketCap"]
     stock_statistics["VOLUME"] = volume
     stock_statistics["RELATIVE_VOLUME"] = round(volume/stock_statistics_historical[ticker]["averageVolume"], 3)
                                                                                  
-#This function gets the current minutes elapsed in Eastern Time
+#The "get_minutes_elapsed" function gets the current minutes elapsed in Eastern Time
 def get_minutes_elapsed() :
     #First, get the time in Eastern Time
     tz = timezone('EST')
@@ -195,93 +195,181 @@ def get_minutes_elapsed() :
     #Calculate the and return total minutes elapsed
     return (hour*60)+minutes
 
+#The "driver" is the Microsoft Edge webdriver that I will automate to scrape live price and volume data from a Yahoo Finance stock watchlist
 driver = webdriver.Edge()
 
-def open_webbdriver(user_email, user_password) :
+#The "open_webdriver" function automates the entire login process for the Yahoo Finance website to get to the stock watchlist site
+def open_webdriver(user_email, user_password) :
+
+    #This is the initial url I will attempt to load, but it will take me to the general Yahoo Finance landing page
     url = "https://finance.yahoo.com/portfolios/"
+
+    #Load the this url and make the webdriver fullscreen
     driver.get(url)
     driver.fullscreen_window()
 
+    #This try-and-except code block accounts for a specific circumstance in which an ad generates above the sign-in button and changes how it is expressed in the website html.
     try :
+        
+        #Locate the signin button element and automate the webdriver to click it to redirect the webdriver to the sign-in url
         sign_in = driver.find_element(By.XPATH, "//li[@id='header-profile-menu']/a[1]")
         sign_in.click()
+
+    #If the ad is generated above the sign-in button, locate it using this method instead    
     except :
+        
+        #Locate the signin button element and automate the webdriver to click it to redirect the webdriver to the sign-in url
         sign_in = driver.find_element(By.XPATH, "//div[@id='login-container']/a[1]")
         sign_in.click()
 
+    #Wait for 3 seconds to let the page fully load (after webdriver redirects url) and make webdriver fullscreen
     time.sleep(3)
     driver.fullscreen_window()
 
+    #Locate the username element and automate entering the "user_email" string into the username field.
     username = driver.find_element(By.ID, "login-username")
     username.send_keys(user_email)
 
+    #Locate the next button and click to proceed with in the sign-in process
     next_button = driver.find_element(By.NAME, "signin")
     next_button.click()
 
+    #Wait for 3 seconds to let the page fully load (after webdriver redirects url) and make webdriver fullscreen
     time.sleep(3)
     driver.fullscreen_window()
 
+    #Locate the password element and automate entering the "user_password" string into the password field.
     password = driver.find_element(By.ID, "login-passwd")
     password.send_keys(user_password)
 
+    #Locate the next button and click to proceed with in the sign-in process
     next_button2 = driver.find_element(By.NAME, "verifyPassword")
     next_button2.click()
 
+    #Wait for 3 seconds to let the page fully load (after webdriver redirects url
     time.sleep(3)
 
+    #Redirect the webdriver to the watchlist url and make it fullscreen
     driver.get("https://finance.yahoo.com/portfolio/p_0/view/v1")
     driver.fullscreen_window()
 
+#The "convert_volume_to_integer" converts a string like "2.74M" to the integer 2,740,000 
 def convert_volume_to_integer(volume_in_millions:str) :
+
+    #The "number_translations" dictionary converts K, M, and B to one thousand, one million, and one billion, respectively.
     number_translations = {"K":1000, "M":1000000, "B":1000000000}
+
+    #Calculate actual integer using the "number_translations" 
     return int(float(volume_in_millions[:-1])*number_translations[volume_in_millions[-1]])
 
+#The "scrape_live_data" function is ran at every interval of this day's execution to scrape the live tickers, prices, and volumes of the stocks from the Yahoo Finance watchlist 
 def scrape_live_data() :
+
+    #The "scraped_tickers" list is populated with all the tickers present in the watchlist
     scraped_tickers = [element.text for element in driver.find_elements(By.XPATH, "//td/a[@data-test='quoteLink']")]
+
+    #The "scraped_prices" list is populated with all the live prices present in the watchlist    
     scraped_prices = [float(element.text) for element in driver.find_elements(By.XPATH, "//td/fin-streamer[@data-field='regularMarketPrice']")]
+
+    #The "scraped_prices" list is populated with all the live volumes present in the watchlist. The "convert_volume_to_integer" function is used to convert the raw texts from the website to integers.
     scraped_volumes = [convert_volume_to_integer(element.text) for element in driver.find_elements(By.XPATH, "//td/fin-streamer[@data-field='regularMarketVolume']")]
+
+    #Return the zip of these three lists to create a list of tuples like ("MSFT", 400.02, 1720000)
     return list(zip(scraped_tickers, scraped_prices, scraped_volumes))
 
+#The "main" function is the main function that executes this day's execution to track performance of trading strategy permutations
 def main(testing_mode) :
+
+    #Declare the ticker, price, volume global variables
     global ticker, price, volume
+
+    #The "user_email" string will be entered in the email field for the Yahoo Finance sign-in page
     user_email = "reginaldjhyde@gmail.com"
+
+    #The "user_password" string will be entered in the password field for the Yahoo Finance sign-in page
     user_password = "PythonIsAwesome!"
-    open_webbdriver(user_email, user_password)
+
+    #Call the "open_webdriver" function to sign in and access the watchlist page with live stock prices and volumes
+    open_webdriver(user_email, user_password)
+
+    #Call the "scrape_live_data" function once before the interval execution loop to get the list of stock tickers in the watchlist
     scraped_data = scrape_live_data()
+
+    #This for loop iterates through each of the stock tickers in the watchlist, calculates its historical indicator and statistical data, and stores it in "stock_statistics_historical"
     for scraped_stock in scraped_data :
         indicator_historical[scraped_stock[0]], stock_statistics_historical[scraped_stock[0]] = calculate_historical_data(scraped_stock[0], indicator_data_points_needed, indicator_inputs_required, yahoo_statistics_required)
 
+    #This loop is the main interval execution loop. This loop will run during the whole trading day
     while True :
+
+        #If this is not a test run to test code,
         if not testing_mode :
+
+            #The "minutes_elapsed" integer is will be populated by the "get_minutes_elapsed" function.
             minutes_elapsed = get_minutes_elapsed()
+
+            #If the total minutes elapsed in Eastern time is not between 9:30 AM and 4 PM, break the interval execution loop.
             if not (minutes_elapsed >= 570 and minutes_elapsed <= 960) :
                 print("Stock exchanges are closed")
                 break
 
+        #Get the current time (in seconds) to track when the live data scraping for this interval started.
         start = time.time()
-        
+
+        #Call the "scrape_live_data" function to iterate through each live stock price and volume.
         scraped_data = scrape_live_data()
+
+        #This loop iterates through each tuple of (ticker, live price, live volume) returned from the "scrape_live_data" function.
         for scraped_stock in scraped_data :
+
+            #Unpack the tuple
             ticker, price, volume = scraped_stock
+
+            #Call the "update_indicators" function to update the "indicators" dictionary for this stock
             update_indicators()
+
+            #Call the "update_stock_statistics" function to update the "stock_statistics" dictionary for this stock
             update_stock_statistics()
+            
             print(ticker, price)
             print(indicators)
             print(stock_statistics)
             print()
+            
+            #This for loop iterates through each strategy permuation and tracks their performance
             for strategy_index, strategy in enumerate(strategies) :
+
+                #If this stock is currently held by this strategy permutation
                 if ticker in strategies_performance_tracking[strategy_index][0] :
+
+                    #If this strategy permutation decided to exit the trade
                     if strategy[2]() :
+
+                        #Update "strategies_performance_tracking" list by logging the ticker, starting price, Buy/Short boolean, and current price
                         strategies_performance_tracking[strategy_index][1].append((ticker)+strategies_performance_tracking[strategy_index][0]+(price))
+
+                        #Delete this holding from "strategies_performance_tracking" list
                         del strategies_performance_tracking[strategy_index][0][ticker]
+
+                #If this stock is not currently held by this strategy permutation
                 else :
+
+                    #If this stock passes this strategy permutation's stock selection function
                     if strategy[0]() :
+
+                        #Call this strategy permutation's entrance function 
                         entrance_result = strategy[1]()
+
+                        #If the result of this strategy permutation's entrance function is either True (Buy) or False (Short)
                         if entrance_result != None :
+
+                            #Enter the trade by updating "strategies_performance_tracking" list with current price and True/False (Buy/Short) value
                             strategies_performance_tracking[strategy_index][0][ticker] = (price, entrance_result)
+
+                            #Update the MaxHolding performance tracker by comparing the current number of trades held vs the current max number of trades held
                             current_holding = len(strategies_performance_tracking[strategy_index][0][ticker])
                             strategies_performance_tracking[strategy_index][2][ticker] = max(current_holding, strategies_performance_tracking[strategy_index][2][ticker])
-            
+        
         print("Completed in ", time.time()-start)
         quit()
 
