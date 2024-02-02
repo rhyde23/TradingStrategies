@@ -28,8 +28,6 @@ from calculateHistoricalData import calculate_historical_data, avg_change_formul
 from checkUpToDate import check_up_to_date
 #checkUpToDate script - contains the function "check_up_to_date" to check if a libaray is up-to-date
 
-import traceback, re
-
 #Quit program if @ranaroussi's yfinance package is not up-to-date
 if not check_up_to_date("yfinance") :
     print("yfinance is not up-to-date. Run \"pip install yfinance --upgrade\" to update yfinance.")
@@ -109,57 +107,6 @@ class TradingStrategies :
 
         #The "update_index" is the index of interest of the historical data for updating indicators
         self.update_index = 1
-
-    def get_stock_statistic_requirements(self, selection_strategy) :
-        requirements = {}
-        while True :
-            try :
-                selection_strategy(requirements)
-                break
-            except KeyError as key_missing :
-                stock_stat_name = str(key_missing).replace("'", "")
-                if not stock_stat_name in self.stock_statistics_available :
-                    exception_line = str(traceback.format_exc()).split("\n")[4]
-                    print(exception_line, "  <---- "+stock_stat_name+" is an unsupported stock statistic at this time.")
-                    quit()
-                requirements[stock_stat_name] = 1
-        return list(requirements.keys())
-    
-    def get_indicator_requirements(self, entrance_strategy, exit_strategy) :
-        requirements = {"RSI":{}}
-        while True :
-            try :
-                entrance_strategy(requirements)
-                break
-            except Exception :
-                exception_line = str(traceback.format_exc()).split("\n")[4]
-                required_keys = [required_key.replace("[", "").replace("]", "") for required_key in re.findall("\[{1}[^\[\]]+\]", exception_line)]
-                if len(required_keys) != 2 :
-                    print(exception_line, "  <---- This line should have exactly 2 inputs for an indicator value. Dictionary keys should be [\"(Indicator Name)\"][\"(Indicator Setting)\"]")
-                    quit()
-                if not required_keys[0] in self.indicators_available :
-                    print(exception_line, "  <---- "+required_keys[0]+" is an unsupported indicator at this time.")
-                    quit()
-
-                try :
-                    int(required_keys[1])
-                except :
-                    try :
-                        tuple(required_keys[1])
-                    except :
-                        print("")
-                    
-                
-                print(required_keys)
-                quit()
-    
-    def populate_requirements(self) :
-        for strategy in self.strategies :
-            selection_strategy, entrance_strategy, exit_strategy = strategy
-            print(self.get_stock_statistic_requirements(selection_strategy))
-            print(self.get_indicator_requirements(entrance_strategy, exit_strategy))
-            quit()
-        
 
     #The "update_rsi" function updates the RSI values for each required setting within the "indicators" dictionary.
     def update_rsi(self) :
@@ -354,8 +301,6 @@ class TradingStrategies :
     #The "deploy_strategies" function is the main function that executes this day's execution to track performance of trading strategy permutations
     def deploy_strategies(self, testing_mode) :
 
-        self.populate_requirements()
-
         #The "user_email" string will be entered in the email field for the Yahoo Finance sign-in page
         user_email = "reginaldjhyde@gmail.com"
 
@@ -450,7 +395,7 @@ def selection_test(stats) :
     return stats["MARKET_CAP"] > 1
         
 def entrance_test(inds) :
-    if inds["BBands"][14] <= 80 :
+    if inds["RSI"][14] <= 80 :
         return True
     if inds["RSI"][14] >= 80 :
         return False
