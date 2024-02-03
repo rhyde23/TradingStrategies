@@ -346,7 +346,7 @@ class TradingStrategies :
                 #Call the "update_indicators" function to update the "indicators" dictionary for this stock
                 self.update_indicators()
 
-                print(self.ticker, self.price, self.indicators)
+                #print(self.ticker, self.price, self.indicators)
 
                 #Call the "update_stock_statistics" function to update the "stock_statistics" dictionary for this stock
                 self.update_stock_statistics()
@@ -387,6 +387,7 @@ class TradingStrategies :
                                 self.strategies_performance_tracking[strategy_index][2] = max(current_holding, self.strategies_performance_tracking[strategy_index][2])
             
             print("Completed in ", time.time()-start)
+            print(self.strategies_performance_tracking)
             quit()
             #print(self.strategies_performance_tracking)
 
