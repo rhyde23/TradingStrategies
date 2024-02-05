@@ -10,8 +10,16 @@ def key_is_string(key_string) :
 
 def key_is_integer(key_string) :
     try :
-        int(key_string)
-        return True
+        return int(key_string)
+    except :
+        return False
+
+def key_is_tuple_of_integers(key_string) :
+    if not (key_string[0] == "(" and key_string[-1] == ")") :
+        return False
+    key_string = key_string[1:][:-1]
+    try :
+        return tuple([int(split) for split in key_string.split(",")])
     except :
         return False
 
@@ -48,7 +56,7 @@ def get_stock_statistic_requirements(selection_strategy, stock_statistics_availa
     return stock_statistic_requirements
 
 def get_indicator_requirements(entrance_strategy, exit_strategy, indicators_available) :
-    indicator_requirements = []
+    indicator_requirements = {}
     entrance_function_args, exit_function_args = inspect.getfullargspec(entrance_strategy)[0], inspect.getfullargspec(exit_strategy)[0]
     if len(entrance_function_args) != 1 :
         print("Entrance Strategy \""+entrance_strategy.__name__+"\" should have exactly 1 argument. This argument should be a dictionary of indicators and their settings.")
@@ -83,14 +91,22 @@ def get_indicator_requirements(entrance_strategy, exit_strategy, indicators_avai
             for available_ind in indicators_available :
                 print(available_ind)
             quit()
+
+        if indicators_available[dictionary_key] == 1 :
+            setting = key_is_integer(dictionary_setting)
+            if setting == False :
+                print("For "+dictionary_key+", there should only be one setting, and it should be an integer")
+                quit()
+        else :
+            setting = key_is_tuple_of_integers(dictionary_setting)
+            if setting == False :
+                print("For "+dictionary_key+", there should be "+str(indicators_available[dictionary_key])+" settings, and they should all be integers")
+                quit()
+                
         if not dictionary_key in indicator_requirements :
-            indicator_requirements.append(dictionary_key)
-
-        print(dictionary_key, dictionary_setting)
-
-        if not key_is_integer(dictionary_setting) :
-            print("Indicator setting must be ")
-
+            indicator_requirements[dictionary_key] = [setting]
+        else :
+            indicator_requirements[dictionary_key].append(setting)
         
     return indicator_requirements
 
@@ -107,7 +123,7 @@ def selection_test(stats) :
     return stats["MARKET_CAP"] > 1 
         
 def entrance_test(inds) :
-    if inds["MACD"][14] <= 80 :
+    if inds["MACD"][(12, 26, 9)] <= 80 :
         return True
     if inds["RSI"][14] >= 80 :
         return False
@@ -118,7 +134,7 @@ def exit_test(inds, bought_or_shorted) :
 
 strategy = [selection_test, entrance_test, exit_test]
 
-populate_requirements(strategy, ["RSI", "EMA", "MACD"], ["MARKET_CAP", "VOLUME", "RELATIVE_VOLUME", "PRICE"])
+populate_requirements(strategy, {"RSI":1, "EMA":1, "MACD":3}, ["MARKET_CAP", "VOLUME", "RELATIVE_VOLUME", "PRICE"])
 
 
 
