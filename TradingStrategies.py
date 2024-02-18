@@ -28,6 +28,9 @@ from calculateHistoricalData import calculate_historical_data, avg_change_formul
 from checkUpToDate import check_up_to_date
 #checkUpToDate script - contains the function "check_up_to_date" to check if a libaray is up-to-date
 
+from populateRequirements import get_stock_statistic_requirements, get_indicator_requirements, translate_stat_names_to_yahoo
+#populateRequirements script - Written by me, contains functions to identify what indicators, indicator settings, and stock statistics are required to update live.
+
 #Quit program if @ranaroussi's yfinance package is not up-to-date
 if not check_up_to_date("yfinance") :
     print("yfinance is not up-to-date. Run \"pip install yfinance --upgrade\" to update yfinance.")
@@ -42,9 +45,6 @@ class TradingStrategies :
         #The "strategies" list contains every permuation of selection strategy, entrance strategy, and exit strategy that will be tracked for this day's execution. 
         self.strategies = strategies
 
-        #The "indicators_available" list contains all the names of technical indicators currently supported
-        self.indicators_available = ["RSI", "EMA", "MACD"]
-
         #The "indicator_data_points_needed" dictionary contains the number of data points needed for the live calculation of each technical indicator that will be stored in "indicator_historical"
         self.indicator_data_points_needed = {
             "RSI":2,
@@ -52,20 +52,38 @@ class TradingStrategies :
             "MACD":3,
         }
 
+        #The "indicators_available" dictionary contains all the indicators available and how many arguments are needed for setting specification
+        self.indicators_available = {
+            "RSI":1,
+            "EMA":1,
+            "MACD":3
+        }
+
         #The "stock_statistics_available" list contains all the names of stock statistics currently supported
         self.stock_statistics_available = ["MARKET_CAP", "VOLUME", "RELATIVE_VOLUME", "PRICE"]
 
         #The "indicator_inputs_required" dictionary contains all the specific settings for each indicator that will be used within the entrance/exit strategies
-        self.indicator_inputs_required = {
-            "RSI":[5, 9, 14],
-            "EMA":[10, 20, 50, 100, 200],
-            "MACD":[(12, 26, 9), (5, 35, 5), (19, 39, 9)]
-        }
+        self.indicator_inputs_required = {}
 
-        self.indicator_price_required = True
+        self.stock_statistics_required = []
 
+        for strategy in strategies :
+            new_required_indicators = get_indicator_requirements(strategy[1], strategy[2], self.indicators_available)
+            for new_required_key in new_required_indicators :
+                if not new_required_key in self.indicator_inputs_required :
+                    self.indicator_inputs_required[new_required_key] = new_required_indicators[new_required_key]
+                else :
+                    self.indicator_inputs_required[new_required_key] = list(set(self.indicator_inputs_required[new_required_key]+new_required_indicators[new_required_key]))
+
+            self.stock_statistics_required = list(set(self.stock_statistics_required+get_stock_statistic_requirements(strategy[0], self.stock_statistics_available)))
+        
         #The "yahoo_statistics_required" dictionary contains all the statistics from yfinance needed for all the calculations within "stock_statistics_required"
-        self.yahoo_statistics_required = ["marketCap", "averageVolume"]
+        self.yahoo_statistics_required = translate_stat_names_to_yahoo(self.stock_statistics_required)
+
+        print(self.indicator_inputs_required)
+        print(self.stock_statistics_required)
+        print(self.yahoo_statistics_required)
+        
 
         #The "indicators" dictionary is updated for every scraped stock and contains the live calculations of every required setting of every required indicator for the current stock
         self.indicators = {indicator_name:{} for indicator_name in self.indicator_inputs_required}
@@ -178,20 +196,25 @@ class TradingStrategies :
         self.update_index = 1
 
         #Call all of the update functions for each technical indicator.
-        self.update_rsi()
-        self.update_ema()
-        self.update_macd()
+        update_functions = {
+            "RSI":self.update_rsi,
+            "EMA":self.update_ema,
+            "MACD":self.update_macd,
+        }
 
-        #Update the current price into the "indicators" dictionary if it is required
-        if self.indicator_price_required :
-            self.indicators["CurrentPrice"] = self.price
+        for required_indicator in self.indicator_inputs_required :
+            update_functions[required_indicator]()
 
     #The "update_stock_statistics" function updates the "stock_statistics" dictionary for every new scraped live stock price.
-    def update_stock_statistics(self) : 
-        self.stock_statistics["MARKET_CAP"] = self.stock_statistics_historical[self.ticker]["marketCap"]
-        self.stock_statistics["VOLUME"] = self.volume
-        self.stock_statistics["RELATIVE_VOLUME"] = round(self.volume/self.stock_statistics_historical[self.ticker]["averageVolume"], 3)
-        self.stock_statistics["PRICE"] = self.price
+    def update_stock_statistics(self) :
+        if "MARKET_CAP" in self.stock_statistics_required :
+            self.stock_statistics["MARKET_CAP"] = self.stock_statistics_historical[self.ticker]["marketCap"]
+        if "VOLUME" in self.stock_statistics_required :
+            self.stock_statistics["VOLUME"] = self.volume
+        if "RELATIVE_VOLUME" in self.stock_statistics_required :
+            self.stock_statistics["RELATIVE_VOLUME"] = round(self.volume/self.stock_statistics_historical[self.ticker]["averageVolume"], 3)
+        if "PRICE" in self.stock_statistics_required :
+            self.stock_statistics["PRICE"] = self.price
                                                                                      
     #The "get_minutes_elapsed" function gets the current minutes elapsed in Eastern Time
     def get_minutes_elapsed(self) :
@@ -316,7 +339,7 @@ class TradingStrategies :
         #This for loop iterates through each of the stock tickers in the watchlist, calculates its historical indicator and statistical data, and stores it in "stock_statistics_historical"
         for scraped_stock in scraped_data :
             self.indicator_historical[scraped_stock[0]], self.stock_statistics_historical[scraped_stock[0]] = calculate_historical_data(scraped_stock[0], self.indicator_data_points_needed, self.indicator_inputs_required, self.yahoo_statistics_required)
-
+        
         #This loop is the main interval execution loop. This loop will run during the whole trading day
         while True :
 
@@ -410,4 +433,4 @@ strategies = [
 
 obj = TradingStrategies(strategies)
 
-obj.deploy_strategies(False)
+obj.deploy_strategies(True)

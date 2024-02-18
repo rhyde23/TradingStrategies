@@ -110,6 +110,14 @@ def get_stock_statistic_requirements(selection_strategy, stock_statistics_availa
     #Return the "stock_statistic_requirements" list 
     return stock_statistic_requirements
 
+def translate_stat_names_to_yahoo(stock_statistic_requirements) :
+    yahoo_translations = {"MARKET_CAP":["marketCap"], "RELATIVE_VOLUME":["averageVolume"]}
+    yahoo_requirements = []
+    for yahoo_translation in yahoo_translations :
+        if yahoo_translation in stock_statistic_requirements :
+            yahoo_requirements = list(set(yahoo_requirements+yahoo_translations[yahoo_translation]))
+    return yahoo_requirements
+
 #The "get_indicator_requirements" function returns all of the required indicators and their required settings based on the entrance and exit strategy functions
 def get_indicator_requirements(entrance_strategy, exit_strategy, indicators_available) :
 
@@ -206,13 +214,6 @@ def get_indicator_requirements(entrance_strategy, exit_strategy, indicators_avai
     #Return the "indicator_requirements" dictionary 
     return indicator_requirements
 
-def populate_requirements(strategy, indicators_available, stock_statistics_available) :
-    selection_strategy, entrance_strategy, exit_strategy = strategy
-    print(get_stock_statistic_requirements(selection_strategy, stock_statistics_available))
-    print(get_indicator_requirements(entrance_strategy, exit_strategy, indicators_available))
-    #print(self.get_indicator_requirements(entrance_strategy, exit_strategy))
-    #quit()
-
 
 
 
@@ -235,4 +236,5 @@ def exit_test(inds, bought_or_shorted) :
 
 strategy = [selection_test, entrance_test, exit_test]
 
-populate_requirements(strategy, {"RSI":1, "EMA":1, "MACD":3}, ["MARKET_CAP", "VOLUME", "RELATIVE_VOLUME", "PRICE"])
+#get_indicator_requirements(strategy, {"RSI":1, "EMA":1, "MACD":3}, ["MARKET_CAP", "VOLUME", "RELATIVE_VOLUME", "PRICE"])
+get_indicator_requirements(entrance_test, exit_test, {"RSI":1, "EMA":1, "MACD":3})

@@ -168,7 +168,7 @@ def calculate_historical_data(ticker, indicator_data_points_needed, indicator_in
     day_on = 1
 
     #The "total_data_points_needed" integer is the sum of each indicator's required amount of data points that will be stored within the final product of historical data.
-    total_data_points_needed = sum([indicator_data_points_needed[key]*len(indicator_inputs_required[key]) for key in indicator_data_points_needed])+1
+    total_data_points_needed = sum([indicator_data_points_needed[key]*len(indicator_inputs_required[key]) for key in indicator_data_points_needed if key in indicator_inputs_required])+1
 
     #The "historical_list" list will be the final product of historical data
     historical_list = [0]*total_data_points_needed
@@ -184,13 +184,16 @@ def calculate_historical_data(ticker, indicator_data_points_needed, indicator_in
         loading_index = 1
 
         #Execute the "calculate_historical_rsi_data" function to update the current calculation of each RSI value for each period setting.
-        calculate_historical_rsi_data(indicator_inputs_required["RSI"], indicator_data_points_needed["RSI"])
+        if "RSI" in indicator_inputs_required :
+            calculate_historical_rsi_data(indicator_inputs_required["RSI"], indicator_data_points_needed["RSI"])
 
         #Execute the "calculate_historical_ema_data" function to update the current calculation of each EMA value for each period setting.
-        calculate_historical_ema_data(indicator_inputs_required["EMA"], indicator_data_points_needed["EMA"])
+        if "EMA" in indicator_inputs_required :
+            calculate_historical_ema_data(indicator_inputs_required["EMA"], indicator_data_points_needed["EMA"])
 
         #Execute the "calculate_historical_macd_data" function to update the current calculation of each MACD value for each combination setting.
-        calculate_historical_macd_data(indicator_inputs_required["MACD"], indicator_data_points_needed["MACD"])
+        if "MACD" in indicator_inputs_required :
+            calculate_historical_macd_data(indicator_inputs_required["MACD"], indicator_data_points_needed["MACD"])
 
         #Increment the "day_on" index by 1.
         day_on += 1
