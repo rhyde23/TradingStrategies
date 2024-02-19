@@ -65,16 +65,25 @@ class TradingStrategies :
         #The "indicator_inputs_required" dictionary contains all the specific settings for each indicator that will be used within the entrance/exit strategies
         self.indicator_inputs_required = {}
 
+        #The "stock_statistics_required" list contains all of the stock statistics that will be used within the selection strategy
         self.stock_statistics_required = []
 
+        #Iterate through each strategy and populate "indicator_inputs_required" and "stock_statistics_required"
         for strategy in strategies :
+
+            #Call the "get_indicator_requirements" using the entrance and exit functions from this strategy and parse through all of their required indicator settings
             new_required_indicators = get_indicator_requirements(strategy[1], strategy[2], self.indicators_available)
             for new_required_key in new_required_indicators :
+
+                #If the required indicator is not already within "indicator_inputs_required", add it
                 if not new_required_key in self.indicator_inputs_required :
                     self.indicator_inputs_required[new_required_key] = new_required_indicators[new_required_key]
+
+                #If the required indicator is already within "indicator_inputs_required", add the new settings that aren't already present
                 else :
                     self.indicator_inputs_required[new_required_key] = list(set(self.indicator_inputs_required[new_required_key]+new_required_indicators[new_required_key]))
 
+            #Update "stock_statistics_required" by adding the stock statistics from this strategy that aren't already present
             self.stock_statistics_required = list(set(self.stock_statistics_required+get_stock_statistic_requirements(strategy[0], self.stock_statistics_available)))
         
         #The "yahoo_statistics_required" dictionary contains all the statistics from yfinance needed for all the calculations within "stock_statistics_required"
@@ -120,8 +129,8 @@ class TradingStrategies :
         #3. The "MaxHolding" integer - The maximum amount of stocks that were being held at one time during the trading day.
         self.strategies_performance_tracking = [[{}, [], 0]]*len(self.strategies)
 
-        #The "driver" is the Microsoft Edge webdriver that I will automate to scrape live price and volume data from a Yahoo Finance stock watchlist
-        self.driver = webdriver.Edge()
+        #The "driver" variable will be the Microsoft Edge webdriver that I will automate to scrape live price and volume data from a Yahoo Finance stock watchlist
+        self.driver = None
 
         #The "update_index" is the index of interest of the historical data for updating indicators
         self.update_index = 1
@@ -195,24 +204,33 @@ class TradingStrategies :
         #"The self.update_index" integer is the index of interest of this stock's historical data tuple from the "indicator_historical" dictionary
         self.update_index = 1
 
-        #Call all of the update functions for each technical indicator.
+        #The "update_functions" dictionary associates each indicator name as a string with the function that updates them in real time
         update_functions = {
             "RSI":self.update_rsi,
             "EMA":self.update_ema,
             "MACD":self.update_macd,
         }
 
+        #Call all of the update functions for each technical indicator.
         for required_indicator in self.indicator_inputs_required :
             update_functions[required_indicator]()
 
     #The "update_stock_statistics" function updates the "stock_statistics" dictionary for every new scraped live stock price.
     def update_stock_statistics(self) :
+
+        #If Market Cap is a required statistic, update
         if "MARKET_CAP" in self.stock_statistics_required :
             self.stock_statistics["MARKET_CAP"] = self.stock_statistics_historical[self.ticker]["marketCap"]
+
+        #If Volume is a required statistic, update
         if "VOLUME" in self.stock_statistics_required :
             self.stock_statistics["VOLUME"] = self.volume
+
+        #If Relative Volume is a required statistic, update
         if "RELATIVE_VOLUME" in self.stock_statistics_required :
             self.stock_statistics["RELATIVE_VOLUME"] = round(self.volume/self.stock_statistics_historical[self.ticker]["averageVolume"], 3)
+
+        #If Price is a required statistic, update
         if "PRICE" in self.stock_statistics_required :
             self.stock_statistics["PRICE"] = self.price
                                                                                      
@@ -229,14 +247,22 @@ class TradingStrategies :
         return (hour*60)+minutes
 
 
-    #The "open_webdriver" function automates the entire login process for the Yahoo Finance website to get to the stock watchlist site
-    def open_webdriver(self, user_email, user_password) :
-        try : 
-            #This is the initial url I will attempt to load, but it will take me to the general Yahoo Finance landing page
-            url = "https://finance.yahoo.com/portfolios/"
+    #The "open_webdriver" function opens the initial webdriver
+    def open_webdriver(self, url) :
 
-            #Load the this url and make the webdriver fullscreen
-            self.driver.get(url)
+        #The "driver" is the Microsoft Edge webdriver that I will automate to scrape live price and volume data from a Yahoo Finance stock watchlist
+        self.driver = webdriver.Edge()
+        
+        #Load the this url and make the webdriver fullscreen
+        self.driver.get(url)
+
+    #The "automated_webdriver_signin" function automates the entire login process for the Yahoo Finance website to get to the stock watchlist site
+    def automated_webdriver_signin(self, user_email, user_password, user_watchlist) :
+        
+        #Try automated sign-in
+        try :
+
+            #Make webdriver fullscreen
             self.driver.fullscreen_window()
 
             #This try-and-except code block accounts for a specific circumstance in which an ad generates above the sign-in button and changes how it is expressed in the website html.
@@ -321,18 +347,61 @@ class TradingStrategies :
         #Return the zip of these three lists to create a list of tuples like ("MSFT", 400.02, 1720000)
         return list(zip(scraped_tickers, scraped_prices, scraped_volumes))
 
+    def webdriver_prompt(self) :
+        while True :
+            print("Would you like to redirect the webdriver to your desired watchlist manually or attempt an automated sign-in?")
+            print("Enter \"yes\" for manual sign-in or \"no\" for automated sign-in: ")
+            print()
+            choice = input(">> ")
+            if choice in ["no", "n", "NO", "No", "N"] :
+                print()
+                
+                #The "user_password" string will be entered in the password field for the Yahoo Finance sign-in page
+                user_email = input("Enter the email of your Yahoo Finance! account >> ")
+                
+                print()
+
+                #The "user_password" string will be entered in the password field for the Yahoo Finance sign-in page
+                user_password = input("Enter the password of your Yahoo Finance! account >> ")
+                
+                print()
+                
+                #The "user_watchlist" string url will be redirected to once sign-in is successful
+                user_watchlist = input("Enter the url of your desired Yahoo Finance! watchlist >> ")
+                
+                print()
+                self.open_webdriver("https://finance.yahoo.com/portfolios/")
+                self.automated_webdriver_signin(user_email, user_password, user_watchlist)
+                return True
+            elif choice in ["yes", "y", "YES", "Yes", "Y"] :
+                self.open_webdriver("https://finance.yahoo.com/portfolios/")
+                return False
+            else :
+                print("Please give a \"yes\" or \"no\" answer.")
+                print()
+
+    def webdriver_on_watchlist(self) :
+        return self.driver.current_url[:36] == "https://finance.yahoo.com/portfolio/"
+    
     #The "deploy_strategies" function is the main function that executes this day's execution to track performance of trading strategy permutations
     def deploy_strategies(self, testing_mode) :
 
-        #The "user_email" string will be entered in the email field for the Yahoo Finance sign-in page
-        user_email = "reginaldjhyde@gmail.com"
+        attempted_automated_signin = self.webdriver_prompt()
 
-        #The "user_password" string will be entered in the password field for the Yahoo Finance sign-in page
-        user_password = "PythonIsAwesome!"
+        if not self.webdriver_on_watchlist() :
+            if attempted_automated_signin :
+                print("Automated sign-in failed. Please redirect webdriver to your desired stock watchlist.")
+                print()
+            else :
+                print("Redirect webdriver to your desired stock watchlist.")
+                print()
 
-        #Call the "open_webdriver" function to sign in and access the watchlist page with live stock prices and volumes
-        self.open_webdriver(user_email, user_password)
+        while not self.webdriver_on_watchlist() :
+            pass
 
+        print("Success! The webdriver has reached your desired watchlist to scrape live stock data.")
+        print()
+        
         #Call the "scrape_live_data" function once before the interval execution loop to get the list of stock tickers in the watchlist
         scraped_data = self.scrape_live_data()
 
@@ -413,24 +482,3 @@ class TradingStrategies :
             print(self.strategies_performance_tracking)
             quit()
             #print(self.strategies_performance_tracking)
-
-
-def selection_test(stats) :
-    return stats["MARKET_CAP"] > 1
-        
-def entrance_test(inds) :
-    if inds["RSI"][14] <= 80 :
-        return True
-    if inds["RSI"][14] >= 80 :
-        return False
-
-def exit_test(inds, bought_or_shorted) :
-    return True
-
-strategies = [
-    [selection_test, entrance_test, exit_test]
-]
-
-obj = TradingStrategies(strategies)
-
-obj.deploy_strategies(True)

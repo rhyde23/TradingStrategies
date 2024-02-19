@@ -1,16 +1,23 @@
 #Testing the Trading Strategies class
-#from TradingStrategies import TradingStrategies
-
-#def selection1
+from TradingStrategies import TradingStrategies
 
 
-#testrun = TradingStrategies(strategies)
+def selection_test(stats) :
+    return stats["MARKET_CAP"] > 1
+        
+def entrance_test(inds) :
+    if inds["RSI"][14] <= 80 :
+        return True
+    if inds["RSI"][14] >= 80 :
+        return False
 
+def exit_test(inds, bought_or_shorted) :
+    return True
 
-try :
-    int("g")
-except :
-    try :
-        print(tuple("(5, 2, 4)")[0])
-    except :
-        print("here")
+strategies = [
+    [selection_test, entrance_test, exit_test]
+]
+
+obj = TradingStrategies(strategies)
+
+obj.deploy_strategies(True)

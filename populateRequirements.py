@@ -110,12 +110,21 @@ def get_stock_statistic_requirements(selection_strategy, stock_statistics_availa
     #Return the "stock_statistic_requirements" list 
     return stock_statistic_requirements
 
+#The "translate_stat_names_to_yahoo" function identifies all of the stock statistic names from yfinance that are required
 def translate_stat_names_to_yahoo(stock_statistic_requirements) :
+
+    #The "yahoo_translations" dictionary contains all of the yahoo stock stat names for each stock statistic
     yahoo_translations = {"MARKET_CAP":["marketCap"], "RELATIVE_VOLUME":["averageVolume"]}
+
+    #The "yahoo_requirements" list will be populated
     yahoo_requirements = []
+
+    #This loop iterates through each yahoo stock statistic name translation, sees if it is required, and updates "yahoo_requirements" if so
     for yahoo_translation in yahoo_translations :
         if yahoo_translation in stock_statistic_requirements :
             yahoo_requirements = list(set(yahoo_requirements+yahoo_translations[yahoo_translation]))
+
+    #Return the "yahoo_requirements" list
     return yahoo_requirements
 
 #The "get_indicator_requirements" function returns all of the required indicators and their required settings based on the entrance and exit strategy functions
@@ -213,28 +222,3 @@ def get_indicator_requirements(entrance_strategy, exit_strategy, indicators_avai
 
     #Return the "indicator_requirements" dictionary 
     return indicator_requirements
-
-
-
-
-
-
-
-
-def selection_test(stats) :
-    return stats["MARKET_CAP"] > 1
-        
-def entrance_test(inds) :
-    if inds["MACD"][(12, 26, 9)] <= 80 :
-        return True
-    if inds["RSI"][14] >= 80 :
-        return False
-
-def exit_test(inds, bought_or_shorted) :
-    if inds["EMA"][50] > 5 :
-        return True
-
-strategy = [selection_test, entrance_test, exit_test]
-
-#get_indicator_requirements(strategy, {"RSI":1, "EMA":1, "MACD":3}, ["MARKET_CAP", "VOLUME", "RELATIVE_VOLUME", "PRICE"])
-get_indicator_requirements(entrance_test, exit_test, {"RSI":1, "EMA":1, "MACD":3})
