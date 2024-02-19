@@ -15,7 +15,7 @@ def exit_test(inds, bought_or_shorted) :
     return True
 
 strategies = [
-    [selection_test, entrance_test, exit_test]
+    [selection_test, entrance_test, exit_test, "TestStrategy"]
 ]
 
 obj = TradingStrategies(strategies)
