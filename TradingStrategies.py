@@ -306,8 +306,11 @@ class TradingStrategies :
             #Wait for 3 seconds to let the page fully load (after webdriver redirects url
             time.sleep(3)
 
+            #The string "user_watchlist_link" returns the string of the link associated with this watchlist name
+            user_watchlist_link = [element.get_attribute("href") for element in self.driver.find_elements(By.TAG_NAME, "a") if "portfolio/p_" in element.get_attribute("href") and element.text == user_watchlist][0]
+
             #Redirect the webdriver to the watchlist url and make it fullscreen
-            self.driver.get("https://finance.yahoo.com/portfolio/p_0/view/v1")
+            self.driver.get(user_watchlist_link)
             self.driver.fullscreen_window()
         except :
             #Error message
@@ -482,3 +485,9 @@ class TradingStrategies :
             print(self.strategies_performance_tracking)
             quit()
             #print(self.strategies_performance_tracking)
+
+        #Exit all trades
+        for currently_held in self.strategies_performance_tracking[strategy_index][0] :
+            print(currently_held)
+        quit()
+        #Record Excel Sheet Data 
