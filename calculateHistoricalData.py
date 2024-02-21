@@ -3,6 +3,7 @@
 #Imported Libraries
 
 import yfinance as yf
+import math 
 #@ranaroussi's yfinance library - For accessing historical stock data like closing prices and stock statistics like Market Cap, Average Volume, etc.
 
 #The "historical_list" list will store all of the numbers that I will need to calculate all of the required indicators after an updated live price of a stock is scraped. 
@@ -41,6 +42,8 @@ def calculate_historical_rsi_data(inputs_required, data_points_needed) :
 
     #The "difference" float is the difference in closing price between the current day of interest within this stock's historical data and the previous day.
     difference = hist_data.iloc[day_on]["Close"]-hist_data.iloc[day_on-1]["Close"]
+    if math.isnan(difference) :
+        return None
 
     #This for loop iterates through every RSI input that is required to calculate.
     for period in inputs_required :

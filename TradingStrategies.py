@@ -89,11 +89,6 @@ class TradingStrategies :
         #The "yahoo_statistics_required" dictionary contains all the statistics from yfinance needed for all the calculations within "stock_statistics_required"
         self.yahoo_statistics_required = translate_stat_names_to_yahoo(self.stock_statistics_required)
 
-        print(self.indicator_inputs_required)
-        print(self.stock_statistics_required)
-        print(self.yahoo_statistics_required)
-        
-
         #The "indicators" dictionary is updated for every scraped stock and contains the live calculations of every required setting of every required indicator for the current stock
         self.indicators = {indicator_name:{} for indicator_name in self.indicator_inputs_required}
 
@@ -385,11 +380,23 @@ class TradingStrategies :
 
     def webdriver_on_watchlist(self) :
         return self.driver.current_url[:36] == "https://finance.yahoo.com/portfolio/"
+
+    def exit_trade(self, strategy_index) :
+        #Update "strategies_performance_tracking" list by logging the ticker, starting price, Buy/Short boolean, and current price
+        price_at_entry, bought_or_shorted = self.strategies_performance_tracking[strategy_index][0][self.ticker]
+        self.strategies_performance_tracking[strategy_index][1].append((self.ticker, price_at_entry, bought_or_shorted, self.price))
+
+        #Delete this holding from "strategies_performance_tracking" list
+        del self.strategies_performance_tracking[strategy_index][0][self.ticker]
     
     #The "deploy_strategies" function is the main function that executes this day's execution to track performance of trading strategy permutations
     def deploy_strategies(self, testing_mode) :
 
-        attempted_automated_signin = self.webdriver_prompt()
+        #attempted_automated_signin = self.webdriver_prompt()
+        
+        self.open_webdriver("https://finance.yahoo.com/portfolios/")
+        self.automated_webdriver_signin("hyde9698@yahoo.com", "Passwd4codingstuffawesome", "My Watchlists")
+        attempted_automated_signin = True 
 
         if not self.webdriver_on_watchlist() :
             if attempted_automated_signin :
@@ -455,18 +462,14 @@ class TradingStrategies :
                         #If this strategy permutation decided to exit the trade
                         if strategy[2](self.indicators, self.strategies_performance_tracking[strategy_index][0][self.ticker][1]) :
 
-                            #Update "strategies_performance_tracking" list by logging the ticker, starting price, Buy/Short boolean, and current price
-                            price_at_entry, bought_or_shorted = self.strategies_performance_tracking[strategy_index][0][self.ticker]
-                            self.strategies_performance_tracking[strategy_index][1].append((self.ticker, price_at_entry, bought_or_shorted, self.price))
-
-                            #Delete this holding from "strategies_performance_tracking" list
-                            del self.strategies_performance_tracking[strategy_index][0][self.ticker]
+                            self.exit_trade(strategy_index)
 
                     #If this stock is not currently held by this strategy permutation
                     else :
 
                         #If this stock passes this strategy permutation's stock selection function
                         if strategy[0](self.stock_statistics) :
+                            
 
                             #Call this strategy permutation's entrance function 
                             entrance_result = strategy[1](self.indicators)
@@ -483,11 +486,18 @@ class TradingStrategies :
             
             print("Completed in ", time.time()-start)
             print(self.strategies_performance_tracking)
-            quit()
+            break
+            #quit()
             #print(self.strategies_performance_tracking)
 
         #Exit all trades
-        for currently_held in self.strategies_performance_tracking[strategy_index][0] :
-            print(currently_held)
-        quit()
+        
+        scraped_data = self.scrape_live_data()
+        for scraped_stock in scraped_data :
+            self.ticker, self.price, self.volume = scraped_stock
+            for strategy_index in range(len(self.strategies)) :
+                if self.ticker in self.strategies_performance_tracking[strategy_index][0] :
+                    self.exit_trade(strategy_index)
+        
+        print(self.strategies_performance_tracking)
         #Record Excel Sheet Data 
