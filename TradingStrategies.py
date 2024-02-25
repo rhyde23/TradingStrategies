@@ -36,6 +36,8 @@ if not check_up_to_date("yfinance") :
     print("yfinance is not up-to-date. Run \"pip install yfinance --upgrade\" to update yfinance.")
     quit()
 
+from recordExcelData import record_performance_data
+
 #The TradingStrategies class
 class TradingStrategies :
 
@@ -122,7 +124,7 @@ class TradingStrategies :
         #1. The "Holding" dictionary - {ticker:(price at time of entrance (float), True=Bought/False=shorted (boolean))}
         #2. The "Exited" list - [(ticker, price at time of entrance (float), True=Bought/False=shorted (boolean), price at time of exit (float))]
         #3. The "MaxHolding" integer - The maximum amount of stocks that were being held at one time during the trading day.
-        self.strategies_performance_tracking = [[{}, [], 0]]*len(self.strategies)
+        self.strategies_performance_tracking = [[{}, [], 0, self.strategies[i][3]] for i in range(len(self.strategies))]
 
         #The "driver" variable will be the Microsoft Edge webdriver that I will automate to scrape live price and volume data from a Yahoo Finance stock watchlist
         self.driver = None
@@ -485,7 +487,7 @@ class TradingStrategies :
                                 self.strategies_performance_tracking[strategy_index][2] = max(current_holding, self.strategies_performance_tracking[strategy_index][2])
             
             print("Completed in ", time.time()-start)
-            print(self.strategies_performance_tracking)
+            #print(self.strategies_performance_tracking)
             break
             #quit()
             #print(self.strategies_performance_tracking)
@@ -498,6 +500,7 @@ class TradingStrategies :
             for strategy_index in range(len(self.strategies)) :
                 if self.ticker in self.strategies_performance_tracking[strategy_index][0] :
                     self.exit_trade(strategy_index)
-        
-        print(self.strategies_performance_tracking)
+
+        record_performance_data("C:/Users/regin/OneDrive/Desktop/TestBook.xlsx", self.strategies_performance_tracking)
+        #print(self.strategies_performance_tracking)
         #Record Excel Sheet Data 
