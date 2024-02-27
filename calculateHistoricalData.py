@@ -149,9 +149,6 @@ def calculate_historical_data(ticker, indicator_data_points_needed, indicator_in
     #Declare that this function will be referencing/changing the global variables "historical_list", "hist_data", "day_on", and "loading_index"
     global historical_list, hist_data, day_on, loading_index
 
-    #The "historical_period_length" integer is the amount of years in the past that will be considered for historical data.
-    historical_period_length = 5
-
     #The "yfinance_ticker" variable is the loaded object from yfinance for this stock
     yfinance_ticker = yf.Ticker(ticker)
 
@@ -160,7 +157,7 @@ def calculate_historical_data(ticker, indicator_data_points_needed, indicator_in
         try :
 
             #The "hist_data" variable will be updated as a pandas dataframe containing all of the necessary closing prices for indicator calculations           
-            hist_data = yfinance_ticker.history(period=str(historical_period_length)+"y")
+            hist_data = yfinance_ticker.history(period="max")
             break
         
         except :
@@ -217,4 +214,5 @@ indicator_data_points_needed = {
     "MACD":3,
 }
 
-#res = calculate_historical_data("GOOGL", indicator_data_points_needed, indicator_inputs_required, ["marketCap", "averageVolume"])[0]
+#res = calculate_historical_data("MSFT", indicator_data_points_needed, indicator_inputs_required, ["marketCap", "averageVolume"])[0]
+#print(res)
