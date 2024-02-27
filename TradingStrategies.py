@@ -157,7 +157,7 @@ class TradingStrategies :
 
                 #The "avg_loss" float represents the average of all the negative daily changes in closing prices for this RSI period setting
                 avg_loss = avg_change_formula(self.indicator_historical[self.ticker][self.update_index+1], period, -difference)
-     
+            
             #Calculate the live RSI value for this period using the "rsi_formula" function and store in the "indicators" dictionary
             self.indicators["RSI"][period] = round(rsi_formula(avg_gain, avg_loss), 4)
 
@@ -199,18 +199,16 @@ class TradingStrategies :
     def update_indicators(self) :
 
         #"The self.update_index" integer is the index of interest of this stock's historical data tuple from the "indicator_historical" dictionary
-        self.update_index = 1
+        self.update_index = 1 
 
         #The "update_functions" dictionary associates each indicator name as a string with the function that updates them in real time
-        update_functions = {
-            "RSI":self.update_rsi,
-            "EMA":self.update_ema,
-            "MACD":self.update_macd,
-        }
+        update_function_names = ["RSI", "EMA", "MACD"]
+        update_functions = [self.update_rsi, self.update_ema, self.update_macd]
 
         #Call all of the update functions for each technical indicator.
-        for required_indicator in self.indicator_inputs_required :
-            update_functions[required_indicator]()
+        for ufn_ind, update_function_name in enumerate(update_function_names) :
+            if update_function_name in self.indicator_inputs_required :
+                update_functions[ufn_ind]()
         self.indicators["PRICE"] = self.price
 
     #The "update_stock_statistics" function updates the "stock_statistics" dictionary for every new scraped live stock price.
@@ -249,7 +247,12 @@ class TradingStrategies :
     def open_webdriver(self, url) :
 
         #The "driver" is the Microsoft Edge webdriver that I will automate to scrape live price and volume data from a Yahoo Finance stock watchlist
-        self.driver = webdriver.Edge()
+        
+        try :
+            self.driver = webdriver.Edge()
+        except :
+            self.driver = webdriver.Chrome()
+        
         
         #Load the this url and make the webdriver fullscreen
         self.driver.get(url)
@@ -450,6 +453,7 @@ class TradingStrategies :
 
                 #Call the "update_indicators" function to update the "indicators" dictionary for this stock
                 self.update_indicators()
+                print(self.indicators)
 
                 #print(self.ticker, self.price, self.indicators)
 

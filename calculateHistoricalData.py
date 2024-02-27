@@ -217,4 +217,4 @@ indicator_data_points_needed = {
     "MACD":3,
 }
 
-#print(calculate_historical_data("MSFT", indicator_data_points_needed, indicator_inputs_required, ["marketCap", "averageVolume"]))
+#res = calculate_historical_data("GOOGL", indicator_data_points_needed, indicator_inputs_required, ["marketCap", "averageVolume"])[0]
