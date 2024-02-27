@@ -142,7 +142,7 @@ def get_indicator_requirements(entrance_strategy, exit_strategy, indicators_avai
         quit()
 
     #If the amount of arguments in the exit function is not 1, return an error message
-    if len(exit_function_args) != 2 :
+    if len(exit_function_args) != 3 :
         print("Exit Strategy \""+exit_strategy.__name__+"\" should have exactly 2 arguments. First argument should be a dictionary of indicators and their settings. Second argument should be if the stock was bought or shorted")
         quit()
 

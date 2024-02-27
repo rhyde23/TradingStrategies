@@ -3,6 +3,8 @@ import openpyxl
 from datetime import datetime, timedelta
 
 def calculate_stats(exited_trades) :
+    if len(exited_trades) == 0 :
+        return "N/A", "N/A"
     wins, gains, losses = 0, 0, 0
     for exited_trade in exited_trades :
         if exited_trade[2] :
@@ -60,5 +62,5 @@ def record_performance_data(path, finished_strategies) :
         row_ind += 1
     workbook_loaded.save(path)
 
-#finished_strategies = [[{}, [('GOOGL', 150.01, True, 160.01), ('AAPL', 182.52, False, 200), ('MSFT', 410.02, True, 409.02), ("nah", 100, True, 101)], 3, 'AwesomeStrategy']]
-#record_performance_data("C:/Users/regin/OneDrive/Desktop/TestBook.xlsx", finished_strategies)
+finished_strategies = [[{}, [('GOOGL', 150.01, True, 160.01), ('AAPL', 182.52, False, 200), ('MSFT', 410.02, True, 409.02), ("nah", 100, True, 101)], 3, 'AwesomeStrategy']]
+record_performance_data("C:/Users/regin/OneDrive/Desktop/TestBook.xlsx", finished_strategies)

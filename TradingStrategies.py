@@ -211,6 +211,7 @@ class TradingStrategies :
         #Call all of the update functions for each technical indicator.
         for required_indicator in self.indicator_inputs_required :
             update_functions[required_indicator]()
+        self.indicators["PRICE"] = self.price
 
     #The "update_stock_statistics" function updates the "stock_statistics" dictionary for every new scraped live stock price.
     def update_stock_statistics(self) :
@@ -462,7 +463,7 @@ class TradingStrategies :
                     if self.ticker in self.strategies_performance_tracking[strategy_index][0] :
 
                         #If this strategy permutation decided to exit the trade
-                        if strategy[2](self.indicators, self.strategies_performance_tracking[strategy_index][0][self.ticker][1]) :
+                        if strategy[2](self.indicators, self.strategies_performance_tracking[strategy_index][0][self.ticker][0], self.strategies_performance_tracking[strategy_index][0][self.ticker][1]) :
 
                             self.exit_trade(strategy_index)
 
@@ -487,13 +488,10 @@ class TradingStrategies :
                                 self.strategies_performance_tracking[strategy_index][2] = max(current_holding, self.strategies_performance_tracking[strategy_index][2])
             
             print("Completed in ", time.time()-start)
-            #print(self.strategies_performance_tracking)
-            break
-            #quit()
-            #print(self.strategies_performance_tracking)
+            print(self.strategies_performance_tracking)
+            quit()
 
         #Exit all trades
-        
         scraped_data = self.scrape_live_data()
         for scraped_stock in scraped_data :
             self.ticker, self.price, self.volume = scraped_stock
@@ -501,6 +499,5 @@ class TradingStrategies :
                 if self.ticker in self.strategies_performance_tracking[strategy_index][0] :
                     self.exit_trade(strategy_index)
 
+        #Record Excel Sheet Data
         record_performance_data("C:/Users/regin/OneDrive/Desktop/TestBook.xlsx", self.strategies_performance_tracking)
-        #print(self.strategies_performance_tracking)
-        #Record Excel Sheet Data 
