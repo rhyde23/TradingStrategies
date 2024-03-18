@@ -32,4 +32,4 @@ strategies = [
 
 obj = TradingStrategies(strategies)
 
-obj.deploy_strategies(True)
+obj.deploy_strategies(False)

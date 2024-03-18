@@ -384,6 +384,7 @@ class TradingStrategies :
                 print("Please give a \"yes\" or \"no\" answer.")
                 print()
 
+    #The "webdriver_on_watchlist" function returns whether or not the webdriver is on a live watchlist
     def webdriver_on_watchlist(self) :
         return self.driver.current_url[:36] == "https://finance.yahoo.com/portfolio/"
 
@@ -398,23 +399,40 @@ class TradingStrategies :
     #The "deploy_strategies" function is the main function that executes this day's execution to track performance of trading strategy permutations
     def deploy_strategies(self, testing_mode) :
 
-        #attempted_automated_signin = self.webdriver_prompt()
-        
-        self.open_webdriver("https://finance.yahoo.com/portfolios/")
-        self.automated_webdriver_signin("hyde9698@yahoo.com", "Passwd4codingstuffawesome", "My Watchlists")
-        attempted_automated_signin = True 
+        #Call the "webdriver_prompt" function to sign in to YFinance Live Watchlist.
+        attempted_automated_signin = self.webdriver_prompt()
 
+        #Call the "webdriver_on_watchlist" function to see if the sign-in fails
         if not self.webdriver_on_watchlist() :
+
+            #If the attempted sign-in was automated, print this message
             if attempted_automated_signin :
                 print("Automated sign-in failed. Please redirect webdriver to your desired stock watchlist.")
                 print()
+
+            #If the attempted sign-in was not automated, print this message
             else :
                 print("Redirect webdriver to your desired stock watchlist.")
                 print()
 
+        #The "print_error_message_interval" integer is the amount of seconds that will pass between each error message
+        print_error_message_interval = 60
+        
+        #The "print_error_message_again" float is the current time in seconds + the print error message interval
+        print_error_message_again = time.time()+print_error_message_interval
+        
+        #Do not proceed with process until the webdriver is on a live watchlist
         while not self.webdriver_on_watchlist() :
-            pass
 
+            #Print error message every interval.
+            if time.time() >= print_error_message_again :
+                print("Redirect webdriver to your desired stock watchlist.")
+                print()
+
+                #Update "print_error_message_again"
+                print_error_message_again = time.time()+60
+
+        #Print success message for webdriver redirect to Yahoo Finance Live Watchlist
         print("Success! The webdriver has reached your desired watchlist to scrape live stock data.")
         print()
         
@@ -453,9 +471,6 @@ class TradingStrategies :
 
                 #Call the "update_indicators" function to update the "indicators" dictionary for this stock
                 self.update_indicators()
-                print(self.indicators)
-
-                #print(self.ticker, self.price, self.indicators)
 
                 #Call the "update_stock_statistics" function to update the "stock_statistics" dictionary for this stock
                 self.update_stock_statistics()
@@ -477,7 +492,6 @@ class TradingStrategies :
                         #If this stock passes this strategy permutation's stock selection function
                         if strategy[0](self.stock_statistics) :
                             
-
                             #Call this strategy permutation's entrance function 
                             entrance_result = strategy[1](self.indicators)
 
@@ -490,16 +504,23 @@ class TradingStrategies :
                                 #Update the MaxHolding performance tracker by comparing the current number of trades held vs the current max number of trades held
                                 current_holding = len(self.strategies_performance_tracking[strategy_index][0])
                                 self.strategies_performance_tracking[strategy_index][2] = max(current_holding, self.strategies_performance_tracking[strategy_index][2])
-            
+
+            #Record how long this iteration of the main scraping loop took
             print("Completed in ", time.time()-start)
-            print(self.strategies_performance_tracking)
-            quit()
 
         #Exit all trades
         scraped_data = self.scrape_live_data()
+
+        #Iterate through each stock currently held
         for scraped_stock in scraped_data :
+
+            #Unpack ticker, price, and volume
             self.ticker, self.price, self.volume = scraped_stock
+
+            #Iterate through each strategy
             for strategy_index in range(len(self.strategies)) :
+
+                #If the stock is in this strategy, call the "exit_trade" function to exit the trade for this stock for this strategy.
                 if self.ticker in self.strategies_performance_tracking[strategy_index][0] :
                     self.exit_trade(strategy_index)
 
