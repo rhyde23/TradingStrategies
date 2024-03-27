@@ -52,13 +52,15 @@ class TradingStrategies :
             "RSI":2,
             "EMA":1,
             "MACD":3,
+            "SMA":1,
         }
 
         #The "indicators_available" dictionary contains all the indicators available and how many arguments are needed for setting specification
         self.indicators_available = {
             "RSI":1,
             "EMA":1,
-            "MACD":3
+            "MACD":3,
+            "SMA":1,
         }
 
         #The "stock_statistics_available" list contains all the names of stock statistics currently supported
@@ -194,6 +196,17 @@ class TradingStrategies :
 
             #Increase the loading index by the number of data points that were used in this specific MACD combination setting calculation
             self.update_index += self.indicator_data_points_needed["MACD"]
+
+    #The "update_sma" function updates the SMA values for each required setting within the "indicators" dictionary.
+    def update_sma(self) :
+        #This for loop wil iterate through every required SMA period setting 
+        for period in self.indicator_inputs_required["SMA"] :
+
+            #Calculate the live SMA value for this period by adding the current price and dividing the period length and store in the "indicators" dictionary
+            self.indicators["SMA"][period] = round((self.indicator_historical[self.ticker][self.update_index]+self.price)/period, 4)
+
+            #Increase the loading index by the number of data points that were used in this specific SMA period setting calculation
+            self.update_index += self.indicator_data_points_needed["SMA"]
             
     #The "update_indicators" function updates the "indicators" dictionary for every new scraped live stock price.
     def update_indicators(self) :
@@ -202,8 +215,8 @@ class TradingStrategies :
         self.update_index = 1 
 
         #The "update_functions" dictionary associates each indicator name as a string with the function that updates them in real time
-        update_function_names = ["RSI", "EMA", "MACD"]
-        update_functions = [self.update_rsi, self.update_ema, self.update_macd]
+        update_function_names = ["RSI", "EMA", "MACD", "SMA"]
+        update_functions = [self.update_rsi, self.update_ema, self.update_macd, self.update_sma]
 
         #Call all of the update functions for each technical indicator.
         for ufn_ind, update_function_name in enumerate(update_function_names) :
@@ -474,6 +487,9 @@ class TradingStrategies :
 
                 #Call the "update_stock_statistics" function to update the "stock_statistics" dictionary for this stock
                 self.update_stock_statistics()
+
+                print(self.ticker, self.indicators)
+                print()
                 
                 #This for loop iterates through each strategy permuation and tracks their performance
                 for strategy_index, strategy in enumerate(self.strategies) :
@@ -507,6 +523,7 @@ class TradingStrategies :
 
             #Record how long this iteration of the main scraping loop took
             print("Completed in ", time.time()-start)
+            quit()
 
         #Exit all trades
         scraped_data = self.scrape_live_data()

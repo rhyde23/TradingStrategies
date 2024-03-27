@@ -7,16 +7,16 @@ def selection_one(stats) :
         
 def midterm_entrance(inds) :
     macd_tuple = inds["MACD"][(12, 26, 9)]
-    if inds["RSI"][14] <= 30 and inds["EMA"][20] > inds["EMA"][50] and macd_tuple[0] > macd_tuple[1] :
+    if inds["RSI"][14] <= 30 and inds["EMA"][20] > inds["EMA"][50] and macd_tuple[0] > macd_tuple[1] and inds["SMA"][20] > inds["SMA"][50] :
         return True
-    if inds["RSI"][14] >= 70 and inds["EMA"][20] < inds["EMA"][50] and macd_tuple[1] > macd_tuple[0] :
+    if inds["RSI"][14] >= 70 and inds["EMA"][20] < inds["EMA"][50] and macd_tuple[1] > macd_tuple[0] and inds["SMA"][20] < inds["SMA"][50] :
         return False
 
 def shortterm_entrance(inds) :
     macd_tuple = inds["MACD"][(5, 35, 5)]
-    if inds["RSI"][9] <= 30 and inds["EMA"][10] > inds["EMA"][20] and macd_tuple[0] > macd_tuple[1] :
+    if inds["RSI"][9] <= 30 and inds["EMA"][10] > inds["EMA"][20] and macd_tuple[0] > macd_tuple[1] and inds["SMA"][10] > inds["SMA"][20]:
         return True
-    if inds["RSI"][9] >= 70 and inds["EMA"][10] < inds["EMA"][20] and macd_tuple[1] > macd_tuple[0] :
+    if inds["RSI"][9] >= 70 and inds["EMA"][10] < inds["EMA"][20] and macd_tuple[1] > macd_tuple[0] and inds["SMA"][10] < inds["SMA"][20] :
         return False
 
 def one_percent_stoploss(inds, price_entered_at, bought_or_shorted) :

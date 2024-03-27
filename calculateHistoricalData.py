@@ -115,6 +115,26 @@ def calculate_historical_ema_data(inputs_required, data_points_needed) :
         #Increase the "loading_index" integer by however many data points were updated by this function.
         loading_index += data_points_needed
 
+#The "calculate_historical_sma_data" function updates the "historical_list" list for each SMA period setting given the next closing price.
+#Every time the integer index "day_on" increments by 1, this function will have to execute to update all of the values for SMA calculation within "historical_list"
+def calculate_historical_sma_data(inputs_required, data_points_needed) :
+
+    #Declare that this function will be referencing/changing the global variables "historical_list" and "loading_index"
+    global historical_list, loading_index
+
+    #The "recent_close" float is the closing price of the current day of interest within this stock's historical data
+    recent_close = hist_data.iloc[day_on]["Close"]
+
+    #This loop iterates through each required SMA period length setting
+    for period in inputs_required :
+
+        #If there have been enough days passed to start calculating this period's SMA calculation, add the most recent close.
+        if len(hist_data)-day_on <= period :
+            historical_list[loading_index] += recent_close
+
+        #Increase the "loading_index" integer by however many data points were updated by this function.
+        loading_index += data_points_needed
+
 #The "calculate_historical_macd_data" function updates the "historical_list" list for each MACD combination setting given the next closing price.
 #Every time the integer index "day_on" increments by 1, this function will have to execute to update all of the values for MACD calculation within "historical_list"
 def calculate_historical_macd_data(inputs_required, data_points_needed) :
@@ -146,6 +166,12 @@ def calculate_historical_macd_data(inputs_required, data_points_needed) :
 #The "calculate_historical_data" function calculates all of the required historical data needed to efficiently update live indicator values and stock statistics.
 def calculate_historical_data(ticker, indicator_data_points_needed, indicator_inputs_required, yahoo_statistics_required) :
 
+    #The "indicator_function_correspondence" dictionary corresponds each indicator with the function that updates the current indicator values given each historical close price.
+    indicator_function_correspondence = {"RSI":calculate_historical_rsi_data, "EMA":calculate_historical_ema_data, "MACD":calculate_historical_macd_data, "SMA":calculate_historical_sma_data}
+
+    #The "indicator_key_names_in_order" ensures the correct order of indicator calculations within the historical list (dictionaries don't preserve order)
+    indicator_key_names_in_order = ["RSI", "EMA", "MACD", "SMA"]
+    
     #Declare that this function will be referencing/changing the global variables "historical_list", "hist_data", "day_on", and "loading_index"
     global historical_list, hist_data, day_on, loading_index
 
@@ -183,17 +209,14 @@ def calculate_historical_data(ticker, indicator_data_points_needed, indicator_in
         #Reset the "loading_index" index to 1. (the first value in the "historical_list" was set to yesterday's closing price)
         loading_index = 1
 
-        #Execute the "calculate_historical_rsi_data" function to update the current calculation of each RSI value for each period setting.
-        if "RSI" in indicator_inputs_required :
-            calculate_historical_rsi_data(indicator_inputs_required["RSI"], indicator_data_points_needed["RSI"])
+        #Iterate through each indicator name in order 
+        for indicator_key_name in indicator_key_names_in_order :
 
-        #Execute the "calculate_historical_ema_data" function to update the current calculation of each EMA value for each period setting.
-        if "EMA" in indicator_inputs_required :
-            calculate_historical_ema_data(indicator_inputs_required["EMA"], indicator_data_points_needed["EMA"])
+            #If this indicator is a required one 
+            if indicator_key_name in indicator_inputs_required :
 
-        #Execute the "calculate_historical_macd_data" function to update the current calculation of each MACD value for each combination setting.
-        if "MACD" in indicator_inputs_required :
-            calculate_historical_macd_data(indicator_inputs_required["MACD"], indicator_data_points_needed["MACD"])
+                #Execute its calculation function to update the current calculation of each of its values for each period setting.
+                indicator_function_correspondence[indicator_key_name](indicator_inputs_required[indicator_key_name], indicator_data_points_needed[indicator_key_name])
 
         #Increment the "day_on" index by 1.
         day_on += 1
@@ -202,17 +225,23 @@ def calculate_historical_data(ticker, indicator_data_points_needed, indicator_in
     return tuple([round(value, 5) for value in historical_list]), {statistic_required:yfinance_ticker.info[statistic_required] for statistic_required in yahoo_statistics_required}
 
 
+
+"""
 indicator_inputs_required = {
     "RSI":[5, 9, 14],
     "EMA":[10, 20, 50, 100, 200],
-    "MACD":[(12, 26, 9), (5, 35, 5), (19, 39, 9)]
+    "MACD":[(12, 26, 9), (5, 35, 5), (19, 39, 9)],
+    "SMA":[20, 40],
 }
 
 indicator_data_points_needed = {
     "RSI":2,
     "EMA":1,
     "MACD":3,
+    "SMA":1,
 }
+"""
+
 
 #res = calculate_historical_data("MSFT", indicator_data_points_needed, indicator_inputs_required, ["marketCap", "averageVolume"])[0]
 #print(res)
