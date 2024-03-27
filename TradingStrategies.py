@@ -371,7 +371,7 @@ class TradingStrategies :
                 print()
                 
                 #The "user_watchlist" string url will be redirected to once sign-in is successful
-                user_watchlist = input("Enter the url of your desired Yahoo Finance! watchlist >> ")
+                user_watchlist = input("Enter the name of your desired Yahoo Finance! watchlist >> ")
                 
                 print()
                 self.open_webdriver("https://finance.yahoo.com/portfolios/")

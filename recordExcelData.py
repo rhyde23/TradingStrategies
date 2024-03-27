@@ -9,7 +9,7 @@ from datetime import datetime, timedelta
 #datetime library - To get current week and day
 
 #The "calculate_stats" function calculates the variety of metrics used to evaluate a trading strategy's performance like Profit Factor and Win Percentage
-def calculate_stats(exited_trades, wins=0, failed_trades=0, gains=0, losses=0) :
+def calculate_stats(exited_trades, max_holding, wins=0, failed_trades=0, gains=0, losses=0, max_holding_past=0) :
 
     #If there are no exited trades, return N/A for all stats
     if len(exited_trades) == 0 :
@@ -61,7 +61,7 @@ def calculate_stats(exited_trades, wins=0, failed_trades=0, gains=0, losses=0) :
         profit_factor = "ALL WINS"
 
     #Return final stats
-    return [profit_factor, round(win_percentage, 4), gains, losses, wins, failed_trades]
+    return [profit_factor, round(win_percentage, 4), max(max_holding, max_holding_past), gains, losses, wins, failed_trades]
 
 def get_all_time_stats(all_time_sheet) :
     all_time_stats = {}
@@ -92,7 +92,7 @@ def get_current_week_range(dt) :
 
 def write_headers(sheet) :
     #Write all the headers in the sheet
-    headers = ["NAME", "PROFIT FACTOR", "WIN %", "P-A GAINS", "P-A LOSSES", "# OF WINS", "# OF LOSSES", "DATE"]
+    headers = ["NAME", "PROFIT FACTOR", "WIN %", "MAX CONCURRENT", "P-A GAINS", "P-A LOSSES", "# OF WINS", "# OF LOSSES", "DATE"]
     for header_ind, header in enumerate(headers) :
         sheet.cell(row = 1, column = header_ind+1).value = header
 
@@ -155,7 +155,7 @@ def record_performance_data(path, finished_strategies) :
         exited_trades, max_holding, strategy_name = finished_strategy[1:]
 
         #Call the "calculate_stats" to calculate strategy performance metrics
-        calculated_stats = calculate_stats(exited_trades)
+        calculated_stats = calculate_stats(exited_trades, max_holding)
 
         #Record Name
         sheet.cell(row = row_ind, column = 1).value = strategy_name
@@ -173,8 +173,8 @@ def record_performance_data(path, finished_strategies) :
         row_ind += 1
 
         if strategy_name in all_time_stats :
-            all_time_gains, all_time_losses, all_time_wins, all_time_failed_trades = all_time_stats[strategy_name][2:][:-1]
-            all_time_stats[strategy_name] = calculate_stats(exited_trades, wins=all_time_wins, failed_trades=all_time_failed_trades, gains=all_time_gains, losses=all_time_losses)
+            all_time_max_holding, all_time_gains, all_time_losses, all_time_wins, all_time_failed_trades = all_time_stats[strategy_name][2:][:-1]
+            all_time_stats[strategy_name] = calculate_stats(exited_trades, max_holding, wins=all_time_wins, failed_trades=all_time_failed_trades, gains=all_time_gains, losses=all_time_losses, max_holding_past=all_time_max_holding)
         else :
             all_time_stats[strategy_name] = calculated_stats
             new_added.append(strategy_name)
@@ -199,5 +199,5 @@ def record_performance_data(path, finished_strategies) :
     workbook_loaded.save(path)
 
 
-finished_strategies = [[{}, [('GOOGL', 150.01, True, 160.01), ('AAPL', 182.52, False, 150), ('MSFT', 410.02, True, 409.02), ("nah", 100, True, 101)], 3, 'AwesomeStrategy']]
+finished_strategies = [[{}, [('GOOGL', 150.01, True, 160.01), ('AAPL', 182.52, False, 150), ('MSFT', 410.02, True, 409.02), ("nah", 100, True, 101)], 4, 'AwesomeStrategy']]
 record_performance_data("C:/Users/regin/OneDrive/Desktop/TestBook.xlsx", finished_strategies)

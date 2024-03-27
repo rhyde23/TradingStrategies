@@ -32,4 +32,4 @@ strategies = [
 
 obj = TradingStrategies(strategies)
 
-obj.deploy_strategies(False)
+obj.deploy_strategies(False, "C:/Users/regin/OneDrive/Desktop/TestBook.xlsx")
