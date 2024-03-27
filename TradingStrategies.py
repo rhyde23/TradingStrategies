@@ -397,7 +397,7 @@ class TradingStrategies :
         del self.strategies_performance_tracking[strategy_index][0][self.ticker]
     
     #The "deploy_strategies" function is the main function that executes this day's execution to track performance of trading strategy permutations
-    def deploy_strategies(self, testing_mode) :
+    def deploy_strategies(self, testing_mode, excel_sheet_path) :
 
         #Call the "webdriver_prompt" function to sign in to YFinance Live Watchlist.
         attempted_automated_signin = self.webdriver_prompt()
@@ -525,4 +525,4 @@ class TradingStrategies :
                     self.exit_trade(strategy_index)
 
         #Record Excel Sheet Data
-        record_performance_data("C:/Users/regin/OneDrive/Desktop/TestBook.xlsx", self.strategies_performance_tracking)
+        record_performance_data(excel_sheet_path, self.strategies_performance_tracking)
