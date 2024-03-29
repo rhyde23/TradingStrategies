@@ -401,12 +401,16 @@ class TradingStrategies :
     def webdriver_on_watchlist(self) :
         return self.driver.current_url[:36] == "https://finance.yahoo.com/portfolio/"
 
+    #The "exit_trade" function exits the trade for a strategy based on the current status of self.ticker
     def exit_trade(self, strategy_index) :
-        #Update "strategies_performance_tracking" list by logging the ticker, starting price, Buy/Short boolean, and current price
+
+        #Get the Price at Entry float and Bought or Shorted boolean from strategies performance tracking
         price_at_entry, bought_or_shorted = self.strategies_performance_tracking[strategy_index][0][self.ticker]
+
+        #Add this trade to the finished trades list in the performance tracking.
         self.strategies_performance_tracking[strategy_index][1].append((self.ticker, price_at_entry, bought_or_shorted, self.price))
 
-        #Delete this holding from "strategies_performance_tracking" list
+        #Delete this holding from "strategies_performance_tracking" list.
         del self.strategies_performance_tracking[strategy_index][0][self.ticker]
     
     #The "deploy_strategies" function is the main function that executes this day's execution to track performance of trading strategy permutations

@@ -3,7 +3,9 @@
 #Imported Libraries
 
 import yfinance as yf
-import math 
+import math
+from datetime import datetime
+
 #@ranaroussi's yfinance library - For accessing historical stock data like closing prices and stock statistics like Market Cap, Average Volume, etc.
 
 #The "historical_list" list will store all of the numbers that I will need to calculate all of the required indicators after an updated live price of a stock is scraped. 
@@ -18,6 +20,9 @@ day_on = 1
 #"The loading_index" integer is the current index of the values I will populate within the "historical_list" list. It will start at 1 instead of 0 because the first value will be...
 #reserved for yesterday's closing price, regardless of what technical indicator settings are required.
 loading_index = 1
+
+#The "historical_data_includes_today" boolean represents whether or not Yahoo Finance's data is currently including today's live price
+historical_data_includes_today = False 
 
 #The "avg_change_formula" function returns the "smoothed" update of an average change given the current average change, the period of length in days, and the new change.
 def avg_change_formula(current_change, period_length, new_difference) :
@@ -128,8 +133,11 @@ def calculate_historical_sma_data(inputs_required, data_points_needed) :
     #This loop iterates through each required SMA period length setting
     for period in inputs_required :
 
-        #If there have been enough days passed to start calculating this period's SMA calculation, add the most recent close.
-        if len(hist_data)-day_on <= period :
+        #If there have been enough days passed to start calculating this period's SMA calculation
+        first_day_to_start_calculating = len(hist_data)-period+(1-historical_data_includes_today)
+        if day_on >= first_day_to_start_calculating :
+
+            #Add the most recent close to the total sum of closes for SMA average calculation
             historical_list[loading_index] += recent_close
 
         #Increase the "loading_index" integer by however many data points were updated by this function.
@@ -163,17 +171,65 @@ def calculate_historical_macd_data(inputs_required, data_points_needed) :
         #Increase the "loading_index" integer by however many data points were updated by this function.
         loading_index += data_points_needed
 
+#The "calculate_historical_bbands_data" function updates the "historical_list" list for each BBands combination setting given the next closing price.
+#Every time the integer index "day_on" increments by 1, this function will have to execute to update all of the values for BBands calculation within "historical_list"
+def calculate_historical_bbands_data(inputs_required, data_points_needed) :
+    #Declare that this function will be referencing/changing the global variables "historical_list" and "loading_index"
+    global historical_list, loading_index
+
+    #The "recent_close" float is the closing price of the current day of interest within this stock's historical data
+    recent_close = hist_data.iloc[day_on]["Close"]
+
+    #This loop iterates through each required BBands combination setting
+    for combination in inputs_required :
+
+        #If there have been enough days passed to start calculating this BBand combination's SMA calculation
+        first_day_to_start_calculating = len(hist_data)-combination[0]+(1-historical_data_includes_today)
+        if day_on >= first_day_to_start_calculating :
+
+            #Add the most recent close to the total sum of closes for BBand combination's SMA average calculation
+            historical_list[loading_index] += recent_close
+
+        #If this is the last day in "hist_data", make add calculation for variance and add the fake last close price.
+        #The fake closing price and the fake variance allows for the Rolling Standard Deviation formula within TradingStrategies.py
+        if day_on == len(hist_data)-historical_data_includes_today-1 :
+
+            #The "fake_close_price" float is set to the most recent closing price.
+            fake_close_price = recent_close
+
+            #Store the "fake_close_price" in the third designated spot in the "historical_list" for this BBands combination.
+            historical_list[loading_index+2] = fake_close_price
+
+            #The "fake_sma_calculation" float is the average of the sum of all the previous closing prices in this BBand combination's SMA period plus the fake closing price
+            fake_sma_calculation = (historical_list[loading_index]+fake_close_price)/combination[0]
+
+            #The "list_of_deviations" list is the list comprehension of all the differences between each closing price within this period and the fake SMA average squared
+            list_of_deviations = [math.pow(hist_data.iloc[within_period_index]["Close"]-fake_sma_calculation, 2) for within_period_index in range(first_day_to_start_calculating, day_on+1)]
+
+            #Add the fake close price's deviation to the "list_of_deviations" list 
+            list_of_deviations.append(math.pow(fake_close_price-fake_sma_calculation, 2))
+
+            #Calculate this period's fake variance by taking the sum of all the deviations and dividing by the period length
+            fake_variance = sum(list_of_deviations)/combination[0]
+
+            #Store the "fake_variance" in the second designated spot in the "historical_list" for this BBands combination.
+            historical_list[loading_index+1] = fake_variance
+
+        #Increase the "loading_index" integer by however many data points were updated by this function.
+        loading_index += data_points_needed
+
+
 #The "calculate_historical_data" function calculates all of the required historical data needed to efficiently update live indicator values and stock statistics.
 def calculate_historical_data(ticker, indicator_data_points_needed, indicator_inputs_required, yahoo_statistics_required) :
 
     #The "indicator_function_correspondence" dictionary corresponds each indicator with the function that updates the current indicator values given each historical close price.
-    indicator_function_correspondence = {"RSI":calculate_historical_rsi_data, "EMA":calculate_historical_ema_data, "MACD":calculate_historical_macd_data, "SMA":calculate_historical_sma_data}
+    indicator_function_correspondence = {"RSI":calculate_historical_rsi_data, "EMA":calculate_historical_ema_data, "MACD":calculate_historical_macd_data, "SMA":calculate_historical_sma_data, "BBands":calculate_historical_bbands_data}
 
     #The "indicator_key_names_in_order" ensures the correct order of indicator calculations within the historical list (dictionaries don't preserve order)
-    indicator_key_names_in_order = ["RSI", "EMA", "MACD", "SMA"]
+    indicator_key_names_in_order = ["RSI", "EMA", "MACD", "SMA", "BBands"]
     
-    #Declare that this function will be referencing/changing the global variables "historical_list", "hist_data", "day_on", and "loading_index"
-    global historical_list, hist_data, day_on, loading_index
+    #Declare that this function will be changing the global variables "historical_list", "hist_data", "day_on", "loading_index", and "historical_data_includes_today"
+    global historical_list, hist_data, day_on, loading_index, historical_data_includes_today
 
     #The "yfinance_ticker" variable is the loaded object from yfinance for this stock
     yfinance_ticker = yf.Ticker(ticker)
@@ -203,8 +259,19 @@ def calculate_historical_data(ticker, indicator_data_points_needed, indicator_in
     #This will be necessary for RSI calculations as the live RSI update will be dependant on the live price - yesterday's closing price.
     historical_list[0] = hist_data.iloc[-2]["Close"]
 
+    #The "most_recent_close" string is the Year-Month-Day format of the last day included in the closing price historical dataset
+    most_recent_close = str(hist_data.iloc[-1].name).split(" ")[0]
+
+    #"dt" is the datetime object of the current time 
+    dt = datetime.now()
+
+    #The "historical_data_includes_today" boolean represents whether or not Yahoo Finance's data is currently including today's live price
+    historical_data_includes_today = most_recent_close == dt.strftime('%Y-%m-%d')
+
     #This loop will iterate through every index of every day within the stock's historical data
-    while day_on < len(hist_data)-1 :
+    #The reason why day_on < len(hist_data)-historical_data_includes_today is because I don't want to include today's live stock price, so I subtract True or 1, from the length
+    #of the dataset if it includes today.
+    while day_on < len(hist_data)-historical_data_includes_today :
 
         #Reset the "loading_index" index to 1. (the first value in the "historical_list" was set to yesterday's closing price)
         loading_index = 1
@@ -226,12 +293,13 @@ def calculate_historical_data(ticker, indicator_data_points_needed, indicator_in
 
 
 
-"""
+
 indicator_inputs_required = {
     "RSI":[5, 9, 14],
     "EMA":[10, 20, 50, 100, 200],
     "MACD":[(12, 26, 9), (5, 35, 5), (19, 39, 9)],
     "SMA":[20, 40],
+    "BBands":[(10, 2), (20, 2)]
 }
 
 indicator_data_points_needed = {
@@ -239,9 +307,10 @@ indicator_data_points_needed = {
     "EMA":1,
     "MACD":3,
     "SMA":1,
+    "BBands":3
 }
-"""
 
 
-#res = calculate_historical_data("MSFT", indicator_data_points_needed, indicator_inputs_required, ["marketCap", "averageVolume"])[0]
-#print(res)
+
+res = calculate_historical_data("MSFT", indicator_data_points_needed, indicator_inputs_required, ["marketCap", "averageVolume"])[0]
+print(res)
