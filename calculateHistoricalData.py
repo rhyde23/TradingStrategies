@@ -17,9 +17,10 @@ hist_data = None
 #The "day_on" integer is the current index of interest within yfinance's historical closing price data for a stock. It will be set to 1 right now, which is the second oldest day.
 day_on = 1
 
-#"The loading_index" integer is the current index of the values I will populate within the "historical_list" list. It will start at 1 instead of 0 because the first value will be...
-#reserved for yesterday's closing price, regardless of what technical indicator settings are required.
-loading_index = 1
+#"The loading_index" integer is the current index of the values I will populate within the "historical_list" list. It will start at 2 instead of 0 because the first value will be...
+#reserved for yesterday's closing price and the second value will be reserved for the last recorded live price, regardless of what technical indicator settings are required.
+#First value is for RSI calculations, Second value is for BBands calculations
+loading_index = 2
 
 #The "historical_data_includes_today" boolean represents whether or not Yahoo Finance's data is currently including today's live price
 historical_data_includes_today = False 
@@ -195,10 +196,8 @@ def calculate_historical_bbands_data(inputs_required, data_points_needed) :
         if day_on == len(hist_data)-historical_data_includes_today-1 :
 
             #The "fake_close_price" float is set to the most recent closing price.
-            fake_close_price = recent_close
-
-            #Store the "fake_close_price" in the third designated spot in the "historical_list" for this BBands combination.
-            historical_list[loading_index+2] = fake_close_price
+            historical_list[1] = recent_close
+            fake_close_price = historical_list[1]
 
             #The "fake_sma_calculation" float is the average of the sum of all the previous closing prices in this BBand combination's SMA period plus the fake closing price
             fake_sma_calculation = (historical_list[loading_index]+fake_close_price)/combination[0]
@@ -250,7 +249,7 @@ def calculate_historical_data(ticker, indicator_data_points_needed, indicator_in
     day_on = 1
 
     #The "total_data_points_needed" integer is the sum of each indicator's required amount of data points that will be stored within the final product of historical data.
-    total_data_points_needed = sum([indicator_data_points_needed[key]*len(indicator_inputs_required[key]) for key in indicator_data_points_needed if key in indicator_inputs_required])+1
+    total_data_points_needed = sum([indicator_data_points_needed[key]*len(indicator_inputs_required[key]) for key in indicator_data_points_needed if key in indicator_inputs_required])+2
 
     #The "historical_list" list will be the final product of historical data
     historical_list = [0]*total_data_points_needed
@@ -273,8 +272,9 @@ def calculate_historical_data(ticker, indicator_data_points_needed, indicator_in
     #of the dataset if it includes today.
     while day_on < len(hist_data)-historical_data_includes_today :
 
-        #Reset the "loading_index" index to 1. (the first value in the "historical_list" was set to yesterday's closing price)
-        loading_index = 1
+        #Reset the "loading_index" index to 1. (the first value in the "historical_list" was set to yesterday's closing price and the second value will be the last recorded live price.)
+        #First value is for RSI calculations, Second value is for BBands calculations
+        loading_index = 2
 
         #Iterate through each indicator name in order 
         for indicator_key_name in indicator_key_names_in_order :
@@ -307,10 +307,10 @@ indicator_data_points_needed = {
     "EMA":1,
     "MACD":3,
     "SMA":1,
-    "BBands":3
+    "BBands":2
 }
 
 
 
-res = calculate_historical_data("MSFT", indicator_data_points_needed, indicator_inputs_required, ["marketCap", "averageVolume"])[0]
-print(res)
+#res = calculate_historical_data("MSFT", indicator_data_points_needed, indicator_inputs_required, ["marketCap", "averageVolume"])[0]
+#print(res)

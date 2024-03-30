@@ -37,6 +37,10 @@ if not check_up_to_date("yfinance") :
     quit()
 
 from recordExcelData import record_performance_data
+#recordExcelData script - Written by me, contains functions to record strategies performance metrics.
+
+from math import sqrt
+#math library - For various mathematical functions, I need the "sqrt" or square root function for standard deviation calculations for Bollinger Bands calculations
 
 #The TradingStrategies class
 class TradingStrategies :
@@ -53,6 +57,7 @@ class TradingStrategies :
             "EMA":1,
             "MACD":3,
             "SMA":1,
+            "BBands":2,
         }
 
         #The "indicators_available" dictionary contains all the indicators available and how many arguments are needed for setting specification
@@ -61,6 +66,7 @@ class TradingStrategies :
             "EMA":1,
             "MACD":3,
             "SMA":1,
+            "BBands":2,
         }
 
         #The "stock_statistics_available" list contains all the names of stock statistics currently supported
@@ -132,7 +138,9 @@ class TradingStrategies :
         self.driver = None
 
         #The "update_index" is the index of interest of the historical data for updating indicators
-        self.update_index = 1
+        #(the first value in the "historical_list" was set to yesterday's closing price and the second value will be the last recorded live price.)
+        #First value is for RSI calculations, Second value is for BBands calculations
+        self.update_index = 2
 
     #The "update_rsi" function updates the RSI values for each required setting within the "indicators" dictionary.
     def update_rsi(self) :
@@ -207,16 +215,54 @@ class TradingStrategies :
 
             #Increase the loading index by the number of data points that were used in this specific SMA period setting calculation
             self.update_index += self.indicator_data_points_needed["SMA"]
+
+    #The "update_bbands" function updates the BBands values for each required combination within the "indicators" dictionary.
+    def update_bbands(self) :
+        
+        #This for loop wil iterate through every required BBands period setting 
+        for combination in self.indicator_inputs_required["BBands"] :
+
+            #The formula for a rolling standard deviation is as follows:
+            #standard_deviation = sqrt(variance+((new - old) * (new - new_average + old - old_average)))
+
+            #Unpack the old variance value from the last calculation from "self.indicator_historical"
+            variance = self.indicator_historical[self.ticker][self.update_index+1]
+
+            #Unpack the last recorded live price from the last variance calculation
+            old = self.indicator_historical[self.ticker][1]
+
+            #Calculate the new average by adding the sum of the previous period-1 days and the current live price and divide that by the period length
+            new_average = (self.indicator_historical[self.ticker][self.update_index]+self.price)/combination[0]
+
+            #Calculate the old average by adding the sum of the previous period-1 days and the last recorded live price and divide that by the period length
+            old_average = (self.indicator_historical[self.ticker][self.update_index]+old)/combination[0]
+
+            #Calculate the new variance using the rolling standard deviation from above
+            new_variance = variance+((self.price - old) * (self.price - new_average + old - old_average))
+
+            #Calculate the new standard deviation for this combination by taking the square root of the new variance
+            new_standard_deviation = round(sqrt(new_variance), 4)
+
+            #Calculate the lower and upper bands by subtracting and adding the standard deviation by this combination's stdev multiplier, respectively
+            lower_band, middle_band, upper_band = new_average-(new_standard_deviation*combination[1]), new_average, new_average+(new_standard_deviation*combination[1])
+
+            #Store the Lower Band, Middle Band, and Upper Band in "self.indicators" for this Bollinger Bands combination.
+            self.indicators["BBands"][combination] = (lower_band, middle_band, upper_band)
+
+            #Increase the loading index by the number of data points that were used in this specific BBands period setting calculation
+            self.update_index += self.indicator_data_points_needed["BBands"]
             
     #The "update_indicators" function updates the "indicators" dictionary for every new scraped live stock price.
     def update_indicators(self) :
 
         #"The self.update_index" integer is the index of interest of this stock's historical data tuple from the "indicator_historical" dictionary
-        self.update_index = 1 
+        #(the first value in the "historical_list" was set to yesterday's closing price and the second value will be the last recorded live price.)
+        #First value is for RSI calculations, Second value is for BBands calculations
+        self.update_index = 2
 
         #The "update_functions" dictionary associates each indicator name as a string with the function that updates them in real time
-        update_function_names = ["RSI", "EMA", "MACD", "SMA"]
-        update_functions = [self.update_rsi, self.update_ema, self.update_macd, self.update_sma]
+        update_function_names = ["RSI", "EMA", "MACD", "SMA", "BBands"]
+        update_functions = [self.update_rsi, self.update_ema, self.update_macd, self.update_sma, self.update_bbands]
 
         #Call all of the update functions for each technical indicator.
         for ufn_ind, update_function_name in enumerate(update_function_names) :
