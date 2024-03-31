@@ -2,11 +2,11 @@
 
 #Imported Libraries
 
-import openpyxl
 #openpyxl library - For opening and manipulating excel sheets
+import openpyxl
 
-from datetime import datetime, timedelta
 #datetime library - To get current week and day
+from datetime import datetime, timedelta
 
 #The "calculate_stats" function calculates the variety of metrics used to evaluate a trading strategy's performance like Profit Factor and Win Percentage
 def calculate_stats(exited_trades, max_holding, wins=0, failed_trades=0, gains=0, losses=0, max_holding_past=0) :
@@ -256,6 +256,7 @@ def record_performance_data(path, finished_strategies) :
     #Save the workbook
     workbook_loaded.save(path)
 
+###TESTING PURPOSES###
 
 """
 finished_strategies = [[{}, [('GOOGL', 150.01, True, 160.01), ('AAPL', 182.52, False, 150), ('MSFT', 410.02, True, 409.02), ("nah", 100, True, 101)], 4, 'AwesomeStrategy']]

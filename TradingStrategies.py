@@ -2,45 +2,45 @@
 
 #Imported Libraries/Scripts 
 
-import requests, time
 #requests library - For processing url requests for live scraping data from Yahoo Finance watchlist
 #time library - For use of the time.sleep() function to assure that web pages are fully loaded before being scraped
+import requests, time
 
-from datetime import datetime
 #datetime library - For accessing the current time and checking if the US Stock Markets are open
+from datetime import datetime
 
-from pytz import timezone
 #pytz library - For converting the current time in terms of Eastern Time
+from pytz import timezone
 
-from selenium import webdriver
-from selenium.webdriver.common.by import By
 #selenium library - For web scraping websites with dynamic content.
 #Yahoo Finance's live stock watchlists are reliant on JavaScript, so a selenium webdriver is necessary to scrape them.
 #A webdriver basically creates a copy of a web browser and automates/mimics user input and scrapes the website
 #By contrast, Python's beautifulsoup4 can only load page sources (html).
+from selenium import webdriver
+from selenium.webdriver.common.by import By
 
-from calculateHistoricalData import calculate_historical_data, avg_change_formula, ema_formula, rsi_formula
 #calculateHistoricalData script - Written by me for the purpose of calculating all the data needed for the quick update of technical indicators and stock statistics.
 #By accessing historical data using the yfinance package, I can set up everything I need for technical indicator calculations so that the live price is the only missing piece.
 #This script also collects data such as Market Cap, Average Volume, etc. (statistics that don't need to be scraped live)
 #It is hugely important that this data collection happens separately from live scraping for effiency because this initial data collection ONLY NEEDS TO HAPPEN ONCE.
+from calculateHistoricalData import calculate_historical_data, avg_change_formula, ema_formula, rsi_formula
 
-from checkUpToDate import check_up_to_date
 #checkUpToDate script - contains the function "check_up_to_date" to check if a libaray is up-to-date
+from checkUpToDate import check_up_to_date
 
-from populateRequirements import get_stock_statistic_requirements, get_indicator_requirements, translate_stat_names_to_yahoo
 #populateRequirements script - Written by me, contains functions to identify what indicators, indicator settings, and stock statistics are required to update live.
+from populateRequirements import get_stock_statistic_requirements, get_indicator_requirements, translate_stat_names_to_yahoo
+
+#recordExcelData script - Written by me, contains functions to record strategies performance metrics.
+from recordExcelData import record_performance_data
+
+#math library - For various mathematical functions, I need the "sqrt" or square root function for standard deviation calculations for Bollinger Bands calculations
+from math import sqrt
 
 #Quit program if @ranaroussi's yfinance package is not up-to-date
 if not check_up_to_date("yfinance") :
     print("yfinance is not up-to-date. Run \"pip install yfinance --upgrade\" to update yfinance.")
     quit()
-
-from recordExcelData import record_performance_data
-#recordExcelData script - Written by me, contains functions to record strategies performance metrics.
-
-from math import sqrt
-#math library - For various mathematical functions, I need the "sqrt" or square root function for standard deviation calculations for Bollinger Bands calculations
 
 #The TradingStrategies class
 class TradingStrategies :
@@ -260,14 +260,23 @@ class TradingStrategies :
         #First value is for RSI calculations, Second value is for BBands calculations
         self.update_index = 2
 
-        #The "update_functions" dictionary associates each indicator name as a string with the function that updates them in real time
+        #The "update_function_names" list preserves the indicator names in the correct order of how the historical calculation values were recorded in "self.indicator_historical".
         update_function_names = ["RSI", "EMA", "MACD", "SMA", "BBands"]
+
+        #The "update_functions" list associates each indicator name as a string with the function that updates them in real time
         update_functions = [self.update_rsi, self.update_ema, self.update_macd, self.update_sma, self.update_bbands]
 
         #Call all of the update functions for each technical indicator.
+        #Iterate through update function for each technical indicator.
         for ufn_ind, update_function_name in enumerate(update_function_names) :
+
+            #If the indicator is required.
             if update_function_name in self.indicator_inputs_required :
+
+                #Call its update function.
                 update_functions[ufn_ind]()
+
+        #Update the live stock price in "self.indicators"
         self.indicators["PRICE"] = self.price
 
     #The "update_stock_statistics" function updates the "stock_statistics" dictionary for every new scraped live stock price.
@@ -410,35 +419,57 @@ class TradingStrategies :
         #Return the zip of these three lists to create a list of tuples like ("MSFT", 400.02, 1720000)
         return list(zip(scraped_tickers, scraped_prices, scraped_volumes))
 
+    #The "webdriver_prompt" function prompts the user on whether or not they want to attempt an automated sign-in to their Yahoo Finance account.
     def webdriver_prompt(self) :
+
+        #This loop will continue until the user answers a valid "yes" or "no" answers
         while True :
-            print("Would you like to redirect the webdriver to your desired watchlist manually or attempt an automated sign-in?")
-            print("Enter \"yes\" for manual sign-in or \"no\" for automated sign-in: ")
+
+            #These print statements prompt the user through the terminal or IDLE shell.
+            print("Would you like to attempt an automated sign in or redirect the webdriver to your desired watchlist manually?")
+            print("Enter \"yes\" for automated sign-in or \"no\" for manual sign-in: ")
             print()
+
+            #User input for their choice
             choice = input(">> ")
-            if choice in ["no", "n", "NO", "No", "N"] :
+
+            #If the choice is "yes", prompt the user for their Yahoo Finance account information and attempt automated sign-in.
+            if choice in ["yes", "y", "YES", "Yes", "Y"] :
+                
                 print()
                 
-                #The "user_password" string will be entered in the password field for the Yahoo Finance sign-in page
+                #The "user_password" string will be entered in the password field for the Yahoo Finance sign-in page.
                 user_email = input("Enter the email of your Yahoo Finance! account >> ")
                 
                 print()
 
-                #The "user_password" string will be entered in the password field for the Yahoo Finance sign-in page
+                #The "user_password" string will be entered in the password field for the Yahoo Finance sign-in page.
                 user_password = input("Enter the password of your Yahoo Finance! account >> ")
                 
                 print()
                 
-                #The "user_watchlist" string url will be redirected to once sign-in is successful
+                #The "user_watchlist" string url will be redirected to once sign-in is successful.
                 user_watchlist = input("Enter the name of your desired Yahoo Finance! watchlist >> ")
                 
                 print()
+
+                #Direct the webdriver to Yahoo Finance.
                 self.open_webdriver("https://finance.yahoo.com/portfolios/")
+
+                #Execute the "automated_webdriver_signin" function using the user's Yahoo Finance account information.
                 self.automated_webdriver_signin(user_email, user_password, user_watchlist)
+
+                #Return True to signigy that the user attempted the automated sign-in.
                 return True
-            elif choice in ["yes", "y", "YES", "Yes", "Y"] :
+
+            #If the choice is "no", redirect the webdriver to Yahoo Finance and.
+            elif choice in ["no", "n", "NO", "No", "N"] :
                 self.open_webdriver("https://finance.yahoo.com/portfolios/")
+
+                #Return False to signigy that the user did not attempt the automated sign-in.
                 return False
+
+            #If the user input to the prompt was not a clear "yes" or "no" answer, continue prompting them.
             else :
                 print("Please give a \"yes\" or \"no\" answer.")
                 print()

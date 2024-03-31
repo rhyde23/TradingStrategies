@@ -2,11 +2,14 @@
 
 #Imported Libraries
 
+#yfinance library - For accessing historical stock data like closing prices and stock statistics like Market Cap, Average Volume, etc.
 import yfinance as yf
-import math
-from datetime import datetime
 
-#@ranaroussi's yfinance library - For accessing historical stock data like closing prices and stock statistics like Market Cap, Average Volume, etc.
+#math library - Python's library for accessing mathematical functions such as pow() and sqrt()
+import math
+
+#datetime library - For accessing the current date and time.
+from datetime import datetime
 
 #The "historical_list" list will store all of the numbers that I will need to calculate all of the required indicators after an updated live price of a stock is scraped. 
 historical_list = []
@@ -294,6 +297,9 @@ def calculate_historical_data(ticker, indicator_data_points_needed, indicator_in
 
 
 
+
+
+###TESTING PURPOSES###
 indicator_inputs_required = {
     "RSI":[5, 9, 14],
     "EMA":[10, 20, 50, 100, 200],
