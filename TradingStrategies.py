@@ -378,6 +378,12 @@ class TradingStrategies :
             #The string "user_watchlist_link" returns the string of the link associated with this watchlist name
             user_watchlist_link = [element.get_attribute("href") for element in self.driver.find_elements(By.TAG_NAME, "a") if "portfolio/p_" in element.get_attribute("href") and element.text == user_watchlist][0]
 
+            #If the last two characters of the "user_watchlist_link" are "v2"
+            if user_watchlist_link[-2:] == "v2" :
+
+                #Correct the last two characters of "user_watchlist_link" to "v1" to make sure the webdriver will view the portfolio on the correct setting.
+                user_watchlist[-1] = "1"
+            
             #Redirect the webdriver to the watchlist url and make it fullscreen
             self.driver.get(user_watchlist_link)
             self.driver.fullscreen_window()
@@ -476,7 +482,21 @@ class TradingStrategies :
 
     #The "webdriver_on_watchlist" function returns whether or not the webdriver is on a live watchlist
     def webdriver_on_watchlist(self) :
-        return self.driver.current_url[:36] == "https://finance.yahoo.com/portfolio/"
+
+        #If the webdriver's current url is on a specific portfolio
+        if self.driver.current_url[:36] == "https://finance.yahoo.com/portfolio/" :
+
+            #If the last two characters of the webdriver's url is v2, correct it to v1 to make sure the webdriver is viewing the portfolio on the correct setting.
+            if self.driver.current_url[-2:] == "v2" :
+
+                #Redirect the webdriver to the v1 version of this portfolio.
+                self.driver.get(self.driver.current_url[:-1]+"1")
+
+            #Return True to signify that the webdriver is on a specific live portfolio watchlist.
+            return True
+
+        #Return False to signify that the webdriver is not on a specific live portfolio watchlist.
+        return False
 
     #The "exit_trade" function exits the trade for a strategy based on the current status of self.ticker
     def exit_trade(self, strategy_index) :
