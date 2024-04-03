@@ -6,11 +6,11 @@ def selection_one(stats) :
     return stats["MARKET_CAP"] > 2000000000 and stats["PRICE"] > 20
         
 def midterm_entrance(inds) :
-    macd_tuple = inds["MACD"][(12, 26, 9)]
-    bbands_tuple = inds["BBands"][(20, 2)]
-    if bbands_tuple[0] < bbands_tuple[2] :
-        print(bbands_tuple)
-        quit()
+    #macd_tuple = inds["MACD"][(12, 26, 9)]
+    #bbands_tuple = inds["BBands"][(20, 2)]
+    #if bbands_tuple[0] < bbands_tuple[2] :
+        #print(bbands_tuple)
+        #quit()
     if inds["RSI"][14] <= 30 and inds["EMA"][20] > inds["EMA"][50] and macd_tuple[0] > macd_tuple[1] and inds["SMA"][20] > inds["SMA"][50] :
         return True
     if inds["RSI"][14] >= 70 and inds["EMA"][20] < inds["EMA"][50] and macd_tuple[1] > macd_tuple[0] and inds["SMA"][20] < inds["SMA"][50] :
@@ -36,4 +36,4 @@ strategies = [
 
 obj = TradingStrategies(strategies)
 
-obj.deploy_strategies(False, "C:/Users/regin/OneDrive/Desktop/TestBook.xlsx")
+obj.deploy_strategies(True, "C:/Users/regin/OneDrive/Desktop/TestBook.xlsx")

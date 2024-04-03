@@ -417,7 +417,7 @@ class TradingStrategies :
         scraped_tickers = [element.text for element in self.driver.find_elements(By.XPATH, "//td/a[@data-test='quoteLink']")]
 
         #The "scraped_prices" list is populated with all the live prices present in the watchlist    
-        scraped_prices = [float(element.text) for element in self.driver.find_elements(By.XPATH, "//td/fin-streamer[@data-field='regularMarketPrice']")]
+        scraped_prices = [float(element.text.replace(",", "")) for element in self.driver.find_elements(By.XPATH, "//td/fin-streamer[@data-field='regularMarketPrice']")]
 
         #The "scraped_prices" list is populated with all the live volumes present in the watchlist. The "convert_volume_to_integer" function is used to convert the raw texts from the website to integers.
         scraped_volumes = [self.convert_volume_to_integer(element.text) for element in self.driver.find_elements(By.XPATH, "//td/fin-streamer[@data-field='regularMarketVolume']")]
@@ -549,12 +549,16 @@ class TradingStrategies :
         #Print success message for webdriver redirect to Yahoo Finance Live Watchlist
         print("Success! The webdriver has reached your desired watchlist to scrape live stock data.")
         print()
+
+        print("Now the Historical Data will be accessed from Yahoo Finance and indicator calculations will be made...")
+        print()
         
         #Call the "scrape_live_data" function once before the interval execution loop to get the list of stock tickers in the watchlist
         scraped_data = self.scrape_live_data()
 
         #This for loop iterates through each of the stock tickers in the watchlist, calculates its historical indicator and statistical data, and stores it in "stock_statistics_historical"
         for scraped_stock in scraped_data :
+            print(scraped_stock[0], " is being scraped...")
             self.indicator_historical[scraped_stock[0]], self.stock_statistics_historical[scraped_stock[0]] = calculate_historical_data(scraped_stock[0], self.indicator_data_points_needed, self.indicator_inputs_required, self.yahoo_statistics_required)
         
         #This loop is the main interval execution loop. This loop will run during the whole trading day
@@ -589,8 +593,7 @@ class TradingStrategies :
                 #Call the "update_stock_statistics" function to update the "stock_statistics" dictionary for this stock
                 self.update_stock_statistics()
 
-                print(self.ticker, self.indicators)
-                print()
+                print(self.ticker, self.indicators["RSI"])
                 
                 #This for loop iterates through each strategy permuation and tracks their performance
                 for strategy_index, strategy in enumerate(self.strategies) :
