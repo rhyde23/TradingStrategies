@@ -241,7 +241,10 @@ class TradingStrategies :
             new_variance = variance+((self.price - old) * (self.price - new_average + old - old_average))
 
             #Calculate the new standard deviation for this combination by taking the square root of the new variance
-            new_standard_deviation = round(sqrt(new_variance), 4)
+            try:
+                new_standard_deviation = round(sqrt(new_variance), 4)
+            except :
+                print(combination, new_variance, variance, self.indicator_historical[self.ticker], self.price, old, new_average, old_average)
 
             #Calculate the lower and upper bands by subtracting and adding the standard deviation by this combination's stdev multiplier, respectively
             lower_band, middle_band, upper_band = new_average-(new_standard_deviation*combination[1]), new_average, new_average+(new_standard_deviation*combination[1])
@@ -550,17 +553,35 @@ class TradingStrategies :
         print("Success! The webdriver has reached your desired watchlist to scrape live stock data.")
         print()
 
+        #Print message that explains the next process of scraping Yahoo Finance data
         print("Now the Historical Data will be accessed from Yahoo Finance and indicator calculations will be made...")
         print()
         
         #Call the "scrape_live_data" function once before the interval execution loop to get the list of stock tickers in the watchlist
         scraped_data = self.scrape_live_data()
 
+        #The "expected_time_in_minutes" float is the expected amount of time the scraping will take, it is derived by multiplying the amount of stocks in the watchlist by the average seconds per stock (5 seconds)
+        expected_time_in_minutes = (len(scraped_data)*5)/60
+
+        #Print the expected time in minutes for this process
+        print("This process is expected to take "+str(int(expected_time_in_minutes))+"-"+str(int(expected_time_in_minutes+1))+" minutes.")
+
         #This for loop iterates through each of the stock tickers in the watchlist, calculates its historical indicator and statistical data, and stores it in "stock_statistics_historical"
         for scraped_stock in scraped_data :
+
+            #Print message that this current stock is about to be scraped
             print(scraped_stock[0], " is being scraped...")
+
+            #Record the time just before "calculate_historical_data" is called for this stock
+            scrape_start = time.time()
+
+            #Call "calculate_historical_data" and record into "self.indicator_historical" for this stock
             self.indicator_historical[scraped_stock[0]], self.stock_statistics_historical[scraped_stock[0]] = calculate_historical_data(scraped_stock[0], self.indicator_data_points_needed, self.indicator_inputs_required, self.yahoo_statistics_required)
-        
+
+            #Print the amount of time it took for "calculate_historical_data" to finish
+            print("Completed in ", time.time()-scrape_start)
+            print()
+            
         #This loop is the main interval execution loop. This loop will run during the whole trading day
         while True :
 
