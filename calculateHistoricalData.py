@@ -198,8 +198,8 @@ def calculate_historical_bbands_data(inputs_required, data_points_needed) :
         #The fake closing price and the fake variance allows for the Rolling Standard Deviation formula within TradingStrategies.py
         if day_on == len(hist_data)-historical_data_includes_today-1 :
 
-            #The "fake_close_price" float is set to the most recent closing price.
-            historical_list[1] = recent_close
+            #The "fake_close_price" float is set to one tenth of the most recent close.
+            historical_list[1] = recent_close/10
             fake_close_price = historical_list[1]
 
             #The "fake_sma_calculation" float is the average of the sum of all the previous closing prices in this BBand combination's SMA period plus the fake closing price

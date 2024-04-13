@@ -223,7 +223,7 @@ class TradingStrategies :
         for combination in self.indicator_inputs_required["BBands"] :
 
             #The formula for a rolling standard deviation is as follows:
-            #standard_deviation = sqrt(variance+((new - old) * (new - new_average + old - old_average)))
+            #standard_deviation = sqrt(variance+((new - old) * (new - new_average + old - old_average) / period))
 
             #Unpack the old variance value from the last calculation from "self.indicator_historical"
             variance = self.indicator_historical[self.ticker][self.update_index+1]
@@ -238,13 +238,13 @@ class TradingStrategies :
             old_average = (self.indicator_historical[self.ticker][self.update_index]+old)/combination[0]
 
             #Calculate the new variance using the rolling standard deviation from above
-            new_variance = variance+((self.price - old) * (self.price - new_average + old - old_average))
+            new_variance = variance+((self.price - old) * (self.price - new_average + old - old_average) / combination[0])
 
             #Calculate the new standard deviation for this combination by taking the square root of the new variance
             try:
                 new_standard_deviation = round(sqrt(new_variance), 4)
             except :
-                print(combination, new_variance, variance, self.indicator_historical[self.ticker], self.price, old, new_average, old_average)
+                print("standard dev failed", combination, new_variance, variance, self.indicator_historical[self.ticker], self.price, old, new_average, old_average)
 
             #Calculate the lower and upper bands by subtracting and adding the standard deviation by this combination's stdev multiplier, respectively
             lower_band, middle_band, upper_band = new_average-(new_standard_deviation*combination[1]), new_average, new_average+(new_standard_deviation*combination[1])
@@ -385,11 +385,12 @@ class TradingStrategies :
             if user_watchlist_link[-2:] == "v2" :
 
                 #Correct the last two characters of "user_watchlist_link" to "v1" to make sure the webdriver will view the portfolio on the correct setting.
-                user_watchlist[-1] = "1"
+                user_watchlist_link[:-1]+"1"
             
             #Redirect the webdriver to the watchlist url and make it fullscreen
             self.driver.get(user_watchlist_link)
             self.driver.fullscreen_window()
+        
         except :
             #Error message
             print("There was an error with the WebDriver. If there is a captcha, complete it and run the script again. Otherwise, make sure to not interact with the WebDriver whatsoever while it is redirecting to your watchlist.") 
@@ -614,7 +615,10 @@ class TradingStrategies :
                 #Call the "update_stock_statistics" function to update the "stock_statistics" dictionary for this stock
                 self.update_stock_statistics()
 
-                print(self.ticker, self.indicators["RSI"])
+                print(self.ticker)
+                for k in self.indicators :
+                    print(self.indicators[k])
+                print()
                 
                 #This for loop iterates through each strategy permuation and tracks their performance
                 for strategy_index, strategy in enumerate(self.strategies) :

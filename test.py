@@ -6,8 +6,8 @@ def selection_one(stats) :
     return stats["MARKET_CAP"] > 2000000000 and stats["PRICE"] > 20
         
 def midterm_entrance(inds) :
-    #macd_tuple = inds["MACD"][(12, 26, 9)]
-    #bbands_tuple = inds["BBands"][(20, 2)]
+    macd_tuple = inds["MACD"][(12, 26, 9)]
+    bbands_tuple = inds["BBands"][(20, 2)]
     #if bbands_tuple[0] < bbands_tuple[2] :
         #print(bbands_tuple)
         #quit()
