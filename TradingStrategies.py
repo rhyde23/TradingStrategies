@@ -304,7 +304,7 @@ class TradingStrategies :
     #The "get_minutes_elapsed" function gets the current minutes elapsed in Eastern Time
     def get_minutes_elapsed(self) :
         #First, get the time in Eastern Time
-        tz = timezone('EST')
+        tz = timezone('US/Eastern')
 
         #Breaking the string version of this time data structure and extract the hours and minutes
         split_by_colon = str(datetime.now(tz)).split(" ")[1].split(":")
@@ -582,7 +582,10 @@ class TradingStrategies :
             #Print the amount of time it took for "calculate_historical_data" to finish
             print("Completed in ", time.time()-scrape_start)
             print()
-            
+
+        #The "intervals_executed" integer will record the number of main loop iterations are completed.
+        intervals_executed = 0
+        
         #This loop is the main interval execution loop. This loop will run during the whole trading day
         while True :
 
@@ -614,11 +617,6 @@ class TradingStrategies :
 
                 #Call the "update_stock_statistics" function to update the "stock_statistics" dictionary for this stock
                 self.update_stock_statistics()
-
-                print(self.ticker)
-                for k in self.indicators :
-                    print(self.indicators[k])
-                print()
                 
                 #This for loop iterates through each strategy permuation and tracks their performance
                 for strategy_index, strategy in enumerate(self.strategies) :
@@ -650,9 +648,14 @@ class TradingStrategies :
                                 current_holding = len(self.strategies_performance_tracking[strategy_index][0])
                                 self.strategies_performance_tracking[strategy_index][2] = max(current_holding, self.strategies_performance_tracking[strategy_index][2])
 
+                                #Print message for this entrance
+                                print("Strategy \""+strategy[-1]+"\" has "+["Sold", "Bought"][entrance_result]+" "+self.ticker)
+
             #Record how long this iteration of the main scraping loop took
-            print("Completed in ", time.time()-start)
-            quit()
+            print("Completed in ", time.time()-start, "["+str(intervals_executed)+"]")
+
+            #Add one to the "intervals_executed" integer.
+            intervals_executed += 1
 
         #Exit all trades
         scraped_data = self.scrape_live_data()
