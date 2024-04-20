@@ -11,6 +11,30 @@ from datetime import datetime, timedelta
 #The "calculate_stats" function calculates the variety of metrics used to evaluate a trading strategy's performance like Profit Factor and Win Percentage
 def calculate_stats(exited_trades, max_holding, wins=0, failed_trades=0, gains=0, losses=0, max_holding_past=0) :
 
+    #If the "max_holding" input accessed from the all-time stats for this strategy is not an integer or float, set it to zero.
+    if type(max_holding) not in [int, float] :
+        max_holding = 0
+
+    #If the "wins" input accessed from the all-time stats for this strategy is not an integer or float, set it to zero.
+    if type(wins) not in [int, float] :
+        wins = 0
+        
+    #If the "failed_trades" input accessed from the all-time stats for this strategy is not an integer or float, set it to zero.
+    if type(failed_trades) not in [int, float] :
+        failed_trades = 0
+        
+    #If the "gains" input accessed from the all-time stats for this strategy is not an integer or float, set it to zero.
+    if type(gains) not in [int, float] :
+        gains = 0
+        
+    #If the "losses" input accessed from the all-time stats for this strategy is not an integer or float, set it to zero.
+    if type(losses) not in [int, float] :
+        losses = 0
+        
+    #If the "max_holding_past" input accessed from the all-time stats for this strategy is not an integer or float, set it to zero.
+    if type(max_holding_past) not in [int, float] :
+        max_holding_past = 0
+
     #If there are no exited trades, return N/A for all stats
     if len(exited_trades) == 0 :
         return "N/A", "N/A"
@@ -43,16 +67,16 @@ def calculate_stats(exited_trades, max_holding, wins=0, failed_trades=0, gains=0
             else :
                 losses += ((exited_trade[3]-exited_trade[1])/exited_trade[1])*100
                 failed_trades += 1
-    
+   
     #Calculate win percentage by dividing total wins by the number of exited trades
     win_percentage = (wins/(wins+failed_trades))
 
     #If there are any losses
-    if win_percentage != 100 :
+    if win_percentage != 1 :
 
         #Calculate "avg_win" and "avg_loss" by dividing gains by the number of wins and losses by the number of losses
         avg_win, avg_loss = gains/wins, losses/failed_trades
-    
+   
         #Calculate Profit Factor by using the profit factor formula
         profit_factor = round((win_percentage*avg_win)/((1-win_percentage)*avg_loss), 4)
 
@@ -75,7 +99,7 @@ def get_all_time_stats(all_time_sheet) :
         #Get the stat list by iterating through each relevant column on this strategy's row
         stat_list = [all_time_sheet.cell(row = all_time_row_index, column = all_time_column_index).value for all_time_column_index in range(2, all_time_sheet.max_column+1)]
 
-        #Assign this stat list to this row's strategy name key 
+        #Assign this stat list to this row's strategy name key
         all_time_stats[all_time_sheet.cell(row = all_time_row_index, column = 1).value] = stat_list
 
     #Return the "all_time_stats" dictionary
@@ -128,10 +152,10 @@ def record_performance_data(path, finished_strategies) :
 
         #Call the "get_all_time_stats" function to get the all-time stats for each strategy.
         all_time_stats = get_all_time_stats(sheet)
-
+       
     #If it doesn't exist, create it
     except :
-        
+       
         #Call the "create_sheet" function from openpyxl
         workbook_loaded.create_sheet(title="ALL TIME")
 
@@ -202,10 +226,10 @@ def record_performance_data(path, finished_strategies) :
         #If this stratey already exists within the ALL TIME sheet
         if strategy_name in all_time_stats :
 
-            #Get the relevant all time stats 
+            #Get the relevant all time stats
             all_time_max_holding, all_time_gains, all_time_losses, all_time_wins, all_time_failed_trades = all_time_stats[strategy_name][2:][:-1]
 
-            #Calculate the new all time stats given the new stats from this day 
+            #Calculate the new all time stats given the new stats from this day
             all_time_stats[strategy_name] = calculate_stats(exited_trades, max_holding, wins=all_time_wins, failed_trades=all_time_failed_trades, gains=all_time_gains, losses=all_time_losses, max_holding_past=all_time_max_holding)
 
         #If this strategy doesn't already exist within the ALL TIME sheet
@@ -221,13 +245,13 @@ def record_performance_data(path, finished_strategies) :
     sheet = workbook_loaded["ALL TIME"]
 
     #THIS LOOP WILL EDIT THE EXISTING STRATEGIES ALL TIME STATS
-    
+   
     #Iterate through each row in the ALL TIME sheet
     for all_time_row_index in range(2, sheet.max_row+1) :
 
         #Get the name of the strategy
         all_time_strat_name = sheet.cell(row = all_time_row_index, column = 1).value
-        
+       
         #Iterate through each column and update each all time stat for this strategy
         for all_time_stat_index, all_time_stat in enumerate(all_time_stats[all_time_strat_name]) :
             sheet.cell(row = all_time_row_index, column = all_time_stat_index+2).value = all_time_stat
@@ -243,7 +267,7 @@ def record_performance_data(path, finished_strategies) :
         #Record the strategy's name in column 1
         sheet.cell(row = current_row, column = 1).value = newly_added
 
-        #Iterate through each of this newly added strategy's stats and add them to the correct column 
+        #Iterate through each of this newly added strategy's stats and add them to the correct column
         for newly_added_stat_index, newly_added_stat in enumerate(all_time_stats[newly_added]) :
             sheet.cell(row = current_row, column = newly_added_stat_index+2).value = newly_added_stat
 
@@ -252,7 +276,7 @@ def record_performance_data(path, finished_strategies) :
 
         #Add one to the "current_row" index
         current_row += 1
-    
+   
     #Save the workbook
     workbook_loaded.save(path)
 

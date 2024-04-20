@@ -1,6 +1,6 @@
 #NOTE: This project is heavily reliant on Yahoo Finance and @ranaroussi's yfinance package, which uses Yahoo Finance's API
 
-#Imported Libraries/Scripts 
+#Imported Libraries/Scripts
 
 #requests library - For processing url requests for live scraping data from Yahoo Finance watchlist
 #time library - For use of the time.sleep() function to assure that web pages are fully loaded before being scraped
@@ -40,15 +40,15 @@ from math import sqrt
 #Quit program if @ranaroussi's yfinance package is not up-to-date
 if not check_up_to_date("yfinance") :
     print("yfinance is not up-to-date. Run \"pip install yfinance --upgrade\" to update yfinance.")
-    quit()
+    #quit()
 
 #The TradingStrategies class
 class TradingStrategies :
 
     #Initialize global variables for the class
     def __init__(self, strategies) :
-        
-        #The "strategies" list contains every permuation of selection strategy, entrance strategy, and exit strategy that will be tracked for this day's execution. 
+       
+        #The "strategies" list contains every permuation of selection strategy, entrance strategy, and exit strategy that will be tracked for this day's execution.
         self.strategies = strategies
 
         #The "indicator_data_points_needed" dictionary contains the number of data points needed for the live calculation of each technical indicator that will be stored in "indicator_historical"
@@ -95,7 +95,7 @@ class TradingStrategies :
 
             #Update "stock_statistics_required" by adding the stock statistics from this strategy that aren't already present
             self.stock_statistics_required = list(set(self.stock_statistics_required+get_stock_statistic_requirements(strategy[0], self.stock_statistics_available)))
-        
+       
         #The "yahoo_statistics_required" dictionary contains all the statistics from yfinance needed for all the calculations within "stock_statistics_required"
         self.yahoo_statistics_required = translate_stat_names_to_yahoo(self.stock_statistics_required)
 
@@ -147,8 +147,8 @@ class TradingStrategies :
 
         #The "difference" float is the difference between the stock's current price and yesterday's closing price
         difference = self.price-self.indicator_historical[self.ticker][0]
-        
-        #This for loop wil iterate through every required RSI period setting 
+       
+        #This for loop wil iterate through every required RSI period setting
         for period in self.indicator_inputs_required["RSI"] :
 
             #If the difference is positive (price has increased since yesterday's close), update the average gain and average loss accordingly using the "avg_change_formula" function
@@ -167,7 +167,7 @@ class TradingStrategies :
 
                 #The "avg_loss" float represents the average of all the negative daily changes in closing prices for this RSI period setting
                 avg_loss = avg_change_formula(self.indicator_historical[self.ticker][self.update_index+1], period, -difference)
-            
+           
             #Calculate the live RSI value for this period using the "rsi_formula" function and store in the "indicators" dictionary
             self.indicators["RSI"][period] = round(rsi_formula(avg_gain, avg_loss), 4)
 
@@ -176,7 +176,7 @@ class TradingStrategies :
 
     #The "update_ema" function updates the EMA values for each required setting within the "indicators" dictionary.
     def update_ema(self) :
-        #This for loop wil iterate through every required EMA period setting 
+        #This for loop wil iterate through every required EMA period setting
         for period in self.indicator_inputs_required["EMA"] :
 
             #Calculate the live EMA value for this period using the "ema_formula" function and store in the "indicators" dictionary
@@ -187,16 +187,16 @@ class TradingStrategies :
 
     #The "update_macd" function updates the MACD values for each required setting within the "indicators" dictionary.
     def update_macd(self) :
-        #This for loop wil iterate through every required MACD period setting 
+        #This for loop wil iterate through every required MACD period setting
         for combination in self.indicator_inputs_required["MACD"] :
 
-            #Calculate the live fast EMA value for this combination using the "ema_formula" function 
+            #Calculate the live fast EMA value for this combination using the "ema_formula" function
             fast_ema = ema_formula(self.price, combination[0], self.indicator_historical[self.ticker][self.update_index])
 
-            #Calculate the live slow EMA value for this combination using the "ema_formula" function 
+            #Calculate the live slow EMA value for this combination using the "ema_formula" function
             slow_ema = ema_formula(self.price, combination[1], self.indicator_historical[self.ticker][self.update_index+1])
 
-            #Calculate the live MACD EMA value for this combination using the "ema_formula" function 
+            #Calculate the live MACD EMA value for this combination using the "ema_formula" function
             macd_ema = ema_formula(fast_ema-slow_ema, combination[2], self.indicator_historical[self.ticker][self.update_index+2])
 
             #Calculate and store the MACD value and the MACD EMA for this combination in the "indicators" dictionary
@@ -207,7 +207,7 @@ class TradingStrategies :
 
     #The "update_sma" function updates the SMA values for each required setting within the "indicators" dictionary.
     def update_sma(self) :
-        #This for loop wil iterate through every required SMA period setting 
+        #This for loop wil iterate through every required SMA period setting
         for period in self.indicator_inputs_required["SMA"] :
 
             #Calculate the live SMA value for this period by adding the current price and dividing the period length and store in the "indicators" dictionary
@@ -218,8 +218,8 @@ class TradingStrategies :
 
     #The "update_bbands" function updates the BBands values for each required combination within the "indicators" dictionary.
     def update_bbands(self) :
-        
-        #This for loop wil iterate through every required BBands period setting 
+       
+        #This for loop wil iterate through every required BBands period setting
         for combination in self.indicator_inputs_required["BBands"] :
 
             #The formula for a rolling standard deviation is as follows:
@@ -254,7 +254,7 @@ class TradingStrategies :
 
             #Increase the loading index by the number of data points that were used in this specific BBands period setting calculation
             self.update_index += self.indicator_data_points_needed["BBands"]
-            
+           
     #The "update_indicators" function updates the "indicators" dictionary for every new scraped live stock price.
     def update_indicators(self) :
 
@@ -318,19 +318,19 @@ class TradingStrategies :
     def open_webdriver(self, url) :
 
         #The "driver" is the Microsoft Edge webdriver that I will automate to scrape live price and volume data from a Yahoo Finance stock watchlist
-        
+       
         try :
             self.driver = webdriver.Edge()
         except :
             self.driver = webdriver.Chrome()
-        
-        
+       
+       
         #Load the this url and make the webdriver fullscreen
         self.driver.get(url)
 
     #The "automated_webdriver_signin" function automates the entire login process for the Yahoo Finance website to get to the stock watchlist site
     def automated_webdriver_signin(self, user_email, user_password, user_watchlist) :
-        
+       
         #Try automated sign-in
         try :
 
@@ -339,14 +339,14 @@ class TradingStrategies :
 
             #This try-and-except code block accounts for a specific circumstance in which an ad generates above the sign-in button and changes how it is expressed in the website html.
             try :
-                
+               
                 #Locate the signin button element and automate the webdriver to click it to redirect the webdriver to the sign-in url
                 sign_in = self.driver.find_element(By.XPATH, "//li[@id='header-profile-menu']/a[1]")
                 sign_in.click()
 
             #If the ad is generated above the sign-in button, locate it using this method instead    
             except :
-                
+               
                 #Locate the signin button element and automate the webdriver to click it to redirect the webdriver to the sign-in url
                 sign_in = self.driver.find_element(By.XPATH, "//div[@id='login-container']/a[1]")
                 sign_in.click()
@@ -386,16 +386,16 @@ class TradingStrategies :
 
                 #Correct the last two characters of "user_watchlist_link" to "v1" to make sure the webdriver will view the portfolio on the correct setting.
                 user_watchlist_link[:-1]+"1"
-            
+           
             #Redirect the webdriver to the watchlist url and make it fullscreen
             self.driver.get(user_watchlist_link)
             self.driver.fullscreen_window()
-        
+       
         except :
             #Error message
-            print("There was an error with the WebDriver. If there is a captcha, complete it and run the script again. Otherwise, make sure to not interact with the WebDriver whatsoever while it is redirecting to your watchlist.") 
+            print("There was an error with the WebDriver. If there is a captcha, complete it and run the script again. Otherwise, make sure to not interact with the WebDriver whatsoever while it is redirecting to your watchlist.")
 
-    #The "convert_volume_to_integer" converts a string like "2.74M" to the integer 2,740,000 
+    #The "convert_volume_to_integer" converts a string like "2.74M" to the integer 2,740,000
     def convert_volume_to_integer(self, volume_str:str) :
 
         #Remove the commas from the string
@@ -411,10 +411,10 @@ class TradingStrategies :
             #The "number_translations" dictionary converts K, M, and B to one thousand, one million, and one billion, respectively.
             number_translations = {"k":1000, "M":1000000, "B":1000000000}
 
-            #Calculate actual integer using the "number_translations" 
+            #Calculate actual integer using the "number_translations"
             return int(float(volume_str[:-1])*number_translations[volume_str[-1]])
 
-    #The "scrape_live_data" function is ran at every interval of this day's execution to scrape the live tickers, prices, and volumes of the stocks from the Yahoo Finance watchlist 
+    #The "scrape_live_data" function is ran at every interval of this day's execution to scrape the live tickers, prices, and volumes of the stocks from the Yahoo Finance watchlist
     def scrape_live_data(self) :
 
         #The "scraped_tickers" list is populated with all the tickers present in the watchlist
@@ -444,23 +444,23 @@ class TradingStrategies :
             choice = input(">> ")
 
             #If the choice is "yes", prompt the user for their Yahoo Finance account information and attempt automated sign-in.
-            if choice in ["yes", "y", "YES", "Yes", "Y"] :
-                
+            if choice in ["yes", "y", "'value2'YES", "Yes", "Y"] :
+               
                 print()
-                
+               
                 #The "user_password" string will be entered in the password field for the Yahoo Finance sign-in page.
                 user_email = input("Enter the email of your Yahoo Finance! account >> ")
-                
+               
                 print()
 
                 #The "user_password" string will be entered in the password field for the Yahoo Finance sign-in page.
                 user_password = input("Enter the password of your Yahoo Finance! account >> ")
-                
+               
                 print()
-                
+               
                 #The "user_watchlist" string url will be redirected to once sign-in is successful.
                 user_watchlist = input("Enter the name of your desired Yahoo Finance! watchlist >> ")
-                
+               
                 print()
 
                 #Direct the webdriver to Yahoo Finance.
@@ -513,7 +513,7 @@ class TradingStrategies :
 
         #Delete this holding from "strategies_performance_tracking" list.
         del self.strategies_performance_tracking[strategy_index][0][self.ticker]
-    
+   
     #The "deploy_strategies" function is the main function that executes this day's execution to track performance of trading strategy permutations
     def deploy_strategies(self, testing_mode, excel_sheet_path) :
 
@@ -535,10 +535,10 @@ class TradingStrategies :
 
         #The "print_error_message_interval" integer is the amount of seconds that will pass between each error message
         print_error_message_interval = 60
-        
+       
         #The "print_error_message_again" float is the current time in seconds + the print error message interval
         print_error_message_again = time.time()+print_error_message_interval
-        
+       
         #Do not proceed with process until the webdriver is on a live watchlist
         while not self.webdriver_on_watchlist() :
 
@@ -557,7 +557,7 @@ class TradingStrategies :
         #Print message that explains the next process of scraping Yahoo Finance data
         print("Now the Historical Data will be accessed from Yahoo Finance and indicator calculations will be made...")
         print()
-        
+       
         #Call the "scrape_live_data" function once before the interval execution loop to get the list of stock tickers in the watchlist
         scraped_data = self.scrape_live_data()
 
@@ -585,7 +585,7 @@ class TradingStrategies :
 
         #The "intervals_executed" integer will record the number of main loop iterations are completed.
         intervals_executed = 0
-        
+       
         #This loop is the main interval execution loop. This loop will run during the whole trading day
         while True :
 
@@ -617,7 +617,7 @@ class TradingStrategies :
 
                 #Call the "update_stock_statistics" function to update the "stock_statistics" dictionary for this stock
                 self.update_stock_statistics()
-                
+               
                 #This for loop iterates through each strategy permuation and tracks their performance
                 for strategy_index, strategy in enumerate(self.strategies) :
 
@@ -628,31 +628,37 @@ class TradingStrategies :
                         if strategy[2](self.indicators, self.strategies_performance_tracking[strategy_index][0][self.ticker][0], self.strategies_performance_tracking[strategy_index][0][self.ticker][1]) :
 
                             self.exit_trade(strategy_index)
+                           
+                            #Print message for this entrance
+                            print("Strategy \""+strategy[-1]+"\" has exited "+self.ticker)
 
                     #If this stock is not currently held by this strategy permutation
                     else :
 
-                        #If this stock passes this strategy permutation's stock selection function
-                        if strategy[0](self.stock_statistics) :
-                            
-                            #Call this strategy permutation's entrance function 
-                            entrance_result = strategy[1](self.indicators)
+                        #If this stock has not already been bought or sold
+                        if not any(self.ticker in completed_trade for completed_trade in self.strategies_performance_tracking[strategy_index][1]) :
 
-                            #If the result of this strategy permutation's entrance function is either True (Buy) or False (Short)
-                            if entrance_result != None :
+                            #If this stock passes this strategy permutation's stock selection function
+                            if strategy[0](self.stock_statistics) :
+                               
+                                #Call this strategy permutation's entrance function
+                                entrance_result = strategy[1](self.indicators)
 
-                                #Enter the trade by updating "strategies_performance_tracking" list with current price and True/False (Buy/Short) value
-                                self.strategies_performance_tracking[strategy_index][0][self.ticker] = (self.price, entrance_result)
+                                #If the result of this strategy permutation's entrance function is either True (Buy) or False (Short)
+                                if entrance_result != None :
 
-                                #Update the MaxHolding performance tracker by comparing the current number of trades held vs the current max number of trades held
-                                current_holding = len(self.strategies_performance_tracking[strategy_index][0])
-                                self.strategies_performance_tracking[strategy_index][2] = max(current_holding, self.strategies_performance_tracking[strategy_index][2])
+                                    #Enter the trade by updating "strategies_performance_tracking" list with current price and True/False (Buy/Short) value
+                                    self.strategies_performance_tracking[strategy_index][0][self.ticker] = (self.price, entrance_result)
 
-                                #Print message for this entrance
-                                print("Strategy \""+strategy[-1]+"\" has "+["Sold", "Bought"][entrance_result]+" "+self.ticker)
+                                    #Update the MaxHolding performance tracker by comparing the current number of trades held vs the current max number of trades held
+                                    current_holding = len(self.strategies_performance_tracking[strategy_index][0])
+                                    self.strategies_performance_tracking[strategy_index][2] = max(current_holding, self.strategies_performance_tracking[strategy_index][2])
+
+                                    #Print message for this entrance
+                                    print("Strategy \""+strategy[-1]+"\" has "+["Sold", "Bought"][entrance_result]+" "+self.ticker)
 
             #Record how long this iteration of the main scraping loop took
-            print("Completed in ", time.time()-start, "["+str(intervals_executed)+"]")
+            #print("Completed in ", time.time()-start, "["+str(intervals_executed)+"]")
 
             #Add one to the "intervals_executed" integer.
             intervals_executed += 1
