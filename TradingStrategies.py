@@ -37,6 +37,12 @@ from recordExcelData import record_performance_data
 #math library - For various mathematical functions, I need the "sqrt" or square root function for standard deviation calculations for Bollinger Bands calculations
 from math import sqrt
 
+#robin_stocks library - To authenticate Robinhood accounts and execute buy and sell stock orders.
+import robin_stocks.robinhood as r
+
+#pyotp - For 2-factor authentication for Robinhood signin.
+import pyotp
+
 #Quit program if @ranaroussi's yfinance package is not up-to-date
 if not check_up_to_date("yfinance") :
     print("yfinance is not up-to-date. Run \"pip install yfinance --upgrade\" to update yfinance.")
@@ -141,6 +147,12 @@ class TradingStrategies :
         #(the first value in the "historical_list" was set to yesterday's closing price and the second value will be the last recorded live price.)
         #First value is for RSI calculations, Second value is for BBands calculations
         self.update_index = 2
+
+        #The "robinhood_login" variable is the response from python's robin_stocks that verifies account login.
+        self.robinhood_login = None
+
+        #The "deployed_strategy_name" is the name of the strategy that the user chooses to deploy with real trades.
+        self.deployed_strategy_name = None
 
     #The "update_rsi" function updates the RSI values for each required setting within the "indicators" dictionary.
     def update_rsi(self) :
@@ -444,7 +456,7 @@ class TradingStrategies :
             choice = input(">> ")
 
             #If the choice is "yes", prompt the user for their Yahoo Finance account information and attempt automated sign-in.
-            if choice in ["yes", "y", "'value2'YES", "Yes", "Y"] :
+            if choice in ["yes", "y", "YES", "Yes", "Y"] :
                
                 print()
                
@@ -513,9 +525,62 @@ class TradingStrategies :
 
         #Delete this holding from "strategies_performance_tracking" list.
         del self.strategies_performance_tracking[strategy_index][0][self.ticker]
-   
-    #The "deploy_strategies" function is the main function that executes this day's execution to track performance of trading strategy permutations
-    def deploy_strategies(self, testing_mode, excel_sheet_path) :
+
+    #The "prompt_user_for_real_deployment" function asks the user if they want to deploy the strategy using Robinhood.
+    def prompt_user_for_real_deployment(self)  :
+        print("Would you like to deploy once of your strategies? You will need to provide your username, password, and 2-factor authentication code if 2-factor authentication is set up for your account.")
+        print("Enter \"yes\" or \"no\"")
+        print()
+        while True :
+            choice = input(">> ")
+            if choice in ["yes", "y", "YES", "Yes", "Y"] :
+                list_of_strategy_names = [s[-1] for s in self.strategies]
+                while True :
+                    print()
+                    strategy_name = input("Enter the name of the strategy you want to deploy with real-life trades >> ")
+                    if strategy_name in list_of_strategy_names :
+                        self.deployed_strategy_name = strategy_name
+                        break 
+                    else :
+                        print()
+                        print("Invalid strategy name. Please double check your list of strategy names.")
+                    print()
+                while True :
+                    print()
+                    robinhood_username = input("Enter your username/email for your Robinhood acount >> ")
+                    print()
+                    robinhood_password = input("Enter your password for your Robinhood acount >> ")
+                    print()
+                    robinhood_2fa = input("Enter the 2-factor authentication code for your Robinhood acount, if it exists. If not, enter nothing. >> ")
+                    print()
+                    if robinhood_2fa == "" :
+                        try :
+                            self.robinhood_login = r.login(robinhood_email, robinhood_password)
+                            break
+                        except :
+                            print("There was an error in your robhinhood sign-in. Please double check your credentials.")
+                    else :
+                        try :
+                            totp = pyotp.TOTP(robinhood_2fa).now()
+                            self.robinhood_login = r.login(robinhood_username, robinhood_password, mfa_code=totp)
+                            break
+                        except :
+                            print("There was an error in your robhinhood sign-in. Please double check your credentials.")
+                break
+            elif choice in ["no", "n", "NO", "No", "N"] :
+                print()
+                break
+            else :
+                print()
+                print("Please give a \"yes\" or \"no\" answer.")
+                print()
+            print()
+    
+    #The "run_strategies" function is the main function that executes this day's execution to track performance of trading strategy permutations
+    def run_strategies(self, testing_mode, excel_sheet_path) :
+
+        #Execute the "prompt_user_for_real_deployment" to prompt the user for Robinhood sign-in info if they wish to deploy a strategy for real trades.
+        self.prompt_user_for_real_deployment()
 
         #Call the "webdriver_prompt" function to sign in to YFinance Live Watchlist.
         attempted_automated_signin = self.webdriver_prompt()
@@ -627,6 +692,9 @@ class TradingStrategies :
                         #If this strategy permutation decided to exit the trade
                         if strategy[2](self.indicators, self.strategies_performance_tracking[strategy_index][0][self.ticker][0], self.strategies_performance_tracking[strategy_index][0][self.ticker][1]) :
 
+                            #Add if strategy[3] == self.deployed_strategy_name
+
+                            #Execute the "exit_trade" function to exit the trade for this stock.
                             self.exit_trade(strategy_index)
                            
                             #Print message for this entrance
@@ -646,6 +714,8 @@ class TradingStrategies :
 
                                 #If the result of this strategy permutation's entrance function is either True (Buy) or False (Short)
                                 if entrance_result != None :
+
+                                    #Add if strategy[3] == self.deployed_strategy_name 
 
                                     #Enter the trade by updating "strategies_performance_tracking" list with current price and True/False (Buy/Short) value
                                     self.strategies_performance_tracking[strategy_index][0][self.ticker] = (self.price, entrance_result)
