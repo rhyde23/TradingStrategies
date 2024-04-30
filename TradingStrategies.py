@@ -154,6 +154,9 @@ class TradingStrategies :
         #The "deployed_strategy_name" is the name of the strategy that the user chooses to deploy with real trades.
         self.deployed_strategy_name = None
 
+        #The "robinhood_investment_amount" float is the amount of money per trade the user wants to use for buy trades.
+        self.robinhood_investment_amount = None
+
     #The "update_rsi" function updates the RSI values for each required setting within the "indicators" dictionary.
     def update_rsi(self) :
 
@@ -287,7 +290,7 @@ class TradingStrategies :
 
             #If the indicator is required.
             if update_function_name in self.indicator_inputs_required :
-
+self.robinhood_investment_amount
                 #Call its update function.
                 update_functions[ufn_ind]()
 
@@ -362,7 +365,7 @@ class TradingStrategies :
                 #Locate the signin button element and automate the webdriver to click it to redirect the webdriver to the sign-in url
                 sign_in = self.driver.find_element(By.XPATH, "//div[@id='login-container']/a[1]")
                 sign_in.click()
-
+self.robinhood_investment_amount
             #Wait for 3 seconds to let the page fully load (after webdriver redirects url) and make webdriver fullscreen
             time.sleep(3)
             self.driver.fullscreen_window()
@@ -442,7 +445,7 @@ class TradingStrategies :
         return list(zip(scraped_tickers, scraped_prices, scraped_volumes))
 
     #The "webdriver_prompt" function prompts the user on whether or not they want to attempt an automated sign-in to their Yahoo Finance account.
-    def webdriver_prompt(self) :
+    def webdriver_prompt(self) :self.robinhood_investment_amount
 
         #This loop will continue until the user answers a valid "yes" or "no" answers
         while True :
@@ -477,7 +480,7 @@ class TradingStrategies :
 
                 #Direct the webdriver to Yahoo Finance.
                 self.open_webdriver("https://finance.yahoo.com/portfolios/")
-
+self.robinhood_investment_amount
                 #Execute the "automated_webdriver_signin" function using the user's Yahoo Finance account information.
                 self.automated_webdriver_signin(user_email, user_password, user_watchlist)
 
@@ -528,52 +531,148 @@ class TradingStrategies :
 
     #The "prompt_user_for_real_deployment" function asks the user if they want to deploy the strategy using Robinhood.
     def prompt_user_for_real_deployment(self)  :
+
+        #Prompt the user about Robinhood strategy deployment
         print("Would you like to deploy once of your strategies? You will need to provide your username, password, and 2-factor authentication code if 2-factor authentication is set up for your account.")
+
+        #Notify user about short-selling.
+        print("Note: Robinhood currently does not support short-selling, so short sales from a deployed strategy will not be executed.")
+
         print("Enter \"yes\" or \"no\"")
         print()
+
+        #Loop until user inputs a valid yes or no answer
         while True :
+
+            #Prompt user for yes or no
             choice = input(">> ")
+
+            #If the user picks yes 
             if choice in ["yes", "y", "YES", "Yes", "Y"] :
+
+                #Get the list of the names of strategies inputting by the user.
                 list_of_strategy_names = [s[-1] for s in self.strategies]
+
+                #Loop until user inputs an existing strategy name
                 while True :
+
                     print()
+
+                    #Prompt the user for an existing strategy name
                     strategy_name = input("Enter the name of the strategy you want to deploy with real-life trades >> ")
+
+                    #If the inputted name exists in the users' strategies
                     if strategy_name in list_of_strategy_names :
+
+                        #Define/Update "self.deployed_strategy_name"
                         self.deployed_strategy_name = strategy_name
-                        break 
+
+                        #Break the strategy name prompt loop
+                        break
+
+                    #If the inputting name doesn't exist in the users' strategies.
                     else :
+
+                        #Notify the user to input a valid strategy name.
                         print()
                         print("Invalid strategy name. Please double check your list of strategy names.")
+                        
                     print()
+
+                #Loop until the user inputs a valid login to Robinhood    
                 while True :
+                    
                     print()
+
+                    #Prompt the user for the username/email for their Robinhood account.
                     robinhood_username = input("Enter your username/email for your Robinhood acount >> ")
+
                     print()
+                    
+                    #Prompt the user for the password for their Robinhood account.
                     robinhood_password = input("Enter your password for your Robinhood acount >> ")
+                    
                     print()
+
+                    #Prompt the user for the 2-factor authentication code for their Robinhood account.
                     robinhood_2fa = input("Enter the 2-factor authentication code for your Robinhood acount, if it exists. If not, enter nothing. >> ")
+
                     print()
+
+                    #If the user doesn't have 2fa
                     if robinhood_2fa == "" :
+
+                        #Try to login
                         try :
+
+                            #Define "robinhood_login"
                             self.robinhood_login = r.login(robinhood_email, robinhood_password)
+
+                            #Break the Robinhood login prompt loop
                             break
+
+                        #If login fails, print error message
                         except :
                             print("There was an error in your robhinhood sign-in. Please double check your credentials.")
+
+                    #If the user has 2fa
                     else :
+
+                        #Try to login
                         try :
+
+                            #Use pyotp to get a temporary 2fa
                             totp = pyotp.TOTP(robinhood_2fa).now()
+
+                            #Define "robinhood_login"
                             self.robinhood_login = r.login(robinhood_username, robinhood_password, mfa_code=totp)
+
+                            #Break the Robinhood Login prompt loop
                             break
+
+                        #If the login fails, print error message
                         except :
                             print("There was an error in your robhinhood sign-in. Please double check your credentials.")
+
+                #Loop until the user enters a valid per investment amount
+                while True :
+
+                    #Try to convert input into a float
+                    try :
+
+                        #Define "robinhood_investment_amount" as the float version of the user input.
+                        self.robinhood_investment_amount = float(input("How much from your account would you like to invest for buy trades? (In $) >> "))
+
+                        print()
+
+                        #Break the investment amount prompt loop.
+                        break
+
+                    #If the input is not a valid float, print error message.
+                    except :
+                        
+                        print()
+                        print("Please enter a valid dollar amount.")
+                        print()
+
+                #Break the yes/no prompt loop
                 break
+
+            #If the user picks no
             elif choice in ["no", "n", "NO", "No", "N"] :
                 print()
+
+                #Break the yes/no prompt loop
                 break
+
+            #If the user does not enter a valid yes/no answer
             else :
+
+                #Print error message
                 print()
                 print("Please give a \"yes\" or \"no\" answer.")
                 print()
+                
             print()
     
     #The "run_strategies" function is the main function that executes this day's execution to track performance of trading strategy permutations
@@ -689,16 +788,23 @@ class TradingStrategies :
                     #If this stock is currently held by this strategy permutation
                     if self.ticker in self.strategies_performance_tracking[strategy_index][0] :
 
-                        #If this strategy permutation decided to exit the trade
-                        if strategy[2](self.indicators, self.strategies_performance_tracking[strategy_index][0][self.ticker][0], self.strategies_performance_tracking[strategy_index][0][self.ticker][1]) :
+                        #The "bought_or_sold_at_entrance" boolean indicates whether the user bought or sold the stock when they entered the trade
+                        bought_or_sold_at_entrance = self.strategies_performance_tracking[strategy_index][0][self.ticker][1]
 
-                            #Add if strategy[3] == self.deployed_strategy_name
+                        #If this strategy permutation decided to exit the trade                        
+                        if strategy[2](self.indicators, self.strategies_performance_tracking[strategy_index][0][self.ticker][0], bought_or_sold_at_entrance) 
 
                             #Execute the "exit_trade" function to exit the trade for this stock.
                             self.exit_trade(strategy_index)
                            
                             #Print message for this entrance
                             print("Strategy \""+strategy[-1]+"\" has exited "+self.ticker)
+
+                            #If the trade is a buy exit and this is the selected deployed strategy
+                            if strategy[3] == self.deployed_strategy_name and bought_or_sold_at_entrance :
+
+                                #Call the "order_buy_fractional_by_price" function to execute the trade on Robinhood
+                                r.orders.order_sell_fractional_by_price(self.ticker, self.robinhood_investment_amount, timeInForce='gfd', extendedHours=False)
 
                     #If this stock is not currently held by this strategy permutation
                     else :
@@ -713,9 +819,7 @@ class TradingStrategies :
                                 entrance_result = strategy[1](self.indicators)
 
                                 #If the result of this strategy permutation's entrance function is either True (Buy) or False (Short)
-                                if entrance_result != None :
-
-                                    #Add if strategy[3] == self.deployed_strategy_name 
+                                if entrance_result != None : 
 
                                     #Enter the trade by updating "strategies_performance_tracking" list with current price and True/False (Buy/Short) value
                                     self.strategies_performance_tracking[strategy_index][0][self.ticker] = (self.price, entrance_result)
@@ -726,6 +830,12 @@ class TradingStrategies :
 
                                     #Print message for this entrance
                                     print("Strategy \""+strategy[-1]+"\" has "+["Sold", "Bought"][entrance_result]+" "+self.ticker)
+
+                                    #If the trade is a buy entrance and this is the selected deployed strategy
+                                    if strategy[3] == self.deployed_strategy_name and entrance_result :
+
+                                        #Call the "order_buy_fractional_by_price" function to execute the trade on Robinhood
+                                        r.orders.order_buy_fractional_by_price(self.ticker, self.robinhood_investment_amount, timeInForce='gfd', extendedHours=False)
 
             #Record how long this iteration of the main scraping loop took
             #print("Completed in ", time.time()-start, "["+str(intervals_executed)+"]")
