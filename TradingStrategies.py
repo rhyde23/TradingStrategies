@@ -290,7 +290,7 @@ class TradingStrategies :
 
             #If the indicator is required.
             if update_function_name in self.indicator_inputs_required :
-self.robinhood_investment_amount
+
                 #Call its update function.
                 update_functions[ufn_ind]()
 
@@ -365,7 +365,7 @@ self.robinhood_investment_amount
                 #Locate the signin button element and automate the webdriver to click it to redirect the webdriver to the sign-in url
                 sign_in = self.driver.find_element(By.XPATH, "//div[@id='login-container']/a[1]")
                 sign_in.click()
-self.robinhood_investment_amount
+
             #Wait for 3 seconds to let the page fully load (after webdriver redirects url) and make webdriver fullscreen
             time.sleep(3)
             self.driver.fullscreen_window()
@@ -445,7 +445,7 @@ self.robinhood_investment_amount
         return list(zip(scraped_tickers, scraped_prices, scraped_volumes))
 
     #The "webdriver_prompt" function prompts the user on whether or not they want to attempt an automated sign-in to their Yahoo Finance account.
-    def webdriver_prompt(self) :self.robinhood_investment_amount
+    def webdriver_prompt(self) :
 
         #This loop will continue until the user answers a valid "yes" or "no" answers
         while True :
@@ -480,7 +480,7 @@ self.robinhood_investment_amount
 
                 #Direct the webdriver to Yahoo Finance.
                 self.open_webdriver("https://finance.yahoo.com/portfolios/")
-self.robinhood_investment_amount
+
                 #Execute the "automated_webdriver_signin" function using the user's Yahoo Finance account information.
                 self.automated_webdriver_signin(user_email, user_password, user_watchlist)
 
@@ -792,7 +792,7 @@ self.robinhood_investment_amount
                         bought_or_sold_at_entrance = self.strategies_performance_tracking[strategy_index][0][self.ticker][1]
 
                         #If this strategy permutation decided to exit the trade                        
-                        if strategy[2](self.indicators, self.strategies_performance_tracking[strategy_index][0][self.ticker][0], bought_or_sold_at_entrance) 
+                        if strategy[2](self.indicators, self.strategies_performance_tracking[strategy_index][0][self.ticker][0], bought_or_sold_at_entrance) :
 
                             #Execute the "exit_trade" function to exit the trade for this stock.
                             self.exit_trade(strategy_index)
