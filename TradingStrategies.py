@@ -256,11 +256,8 @@ class TradingStrategies :
             new_variance = variance+((self.price - old) * (self.price - new_average + old - old_average) / combination[0])
 
             #Calculate the new standard deviation for this combination by taking the square root of the new variance
-            try:
-                new_standard_deviation = round(sqrt(new_variance), 4)
-            except :
-                print("standard dev failed", combination, new_variance, variance, self.indicator_historical[self.ticker], self.price, old, new_average, old_average)
-
+            new_standard_deviation = round(sqrt(new_variance), 4)
+            
             #Calculate the lower and upper bands by subtracting and adding the standard deviation by this combination's stdev multiplier, respectively
             lower_band, middle_band, upper_band = new_average-(new_standard_deviation*combination[1]), new_average, new_average+(new_standard_deviation*combination[1])
 
@@ -838,7 +835,7 @@ class TradingStrategies :
                                         r.orders.order_buy_fractional_by_price(self.ticker, self.robinhood_investment_amount, timeInForce='gfd', extendedHours=False)
 
             #Record how long this iteration of the main scraping loop took
-            #print("Completed in ", time.time()-start, "["+str(intervals_executed)+"]")
+            print("Completed in ", time.time()-start, "["+str(intervals_executed)+"]")
 
             #Add one to the "intervals_executed" integer.
             intervals_executed += 1
