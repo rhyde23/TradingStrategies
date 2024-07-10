@@ -1,1 +1,1 @@
-# stocktrading
+# TradingStrategies
